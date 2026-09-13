@@ -1,0 +1,18 @@
+services:
+  recorder:
+    build: .
+    restart: unless-stopped
+    init: true
+    environment:
+      DEPTH_RECORDER_HEARTBEAT_URL: ${DEPTH_RECORDER_HEARTBEAT_URL:-}
+    volumes:
+      - ./config.yaml:/etc/depth-recorder/config.yaml:ro
+      - recorder-data:/var/lib/depth-recorder/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  recorder-data:

@@ -1,8 +1,10 @@
-# counterback
+# Counterback
 
 **A backtester where the market can answer back.** An execution-realistic backtesting engine, extended to run strategies against order books that react to them.
 
-> **Status: skeleton (September 2026).** The design is fixed; the code is being built. v1 ships on 30 November 2026. Nothing in this repository is a result yet, and the README says so on purpose: the question, the assumptions and the limitations are written down before the first number exists, so that the numbers cannot quietly reshape them later.
+> **Status: data-capture foundation (13 September 2026).** This repository now contains the `depth-recorder` Python package (v0.1.1): Binance Spot capture, offline two-recorder verification, tests, CI, systemd deployment, and verified rclone offload tooling. The backtesting engine, strategy interface, reactive market, and reported experiment results are not implemented yet. The target for v1 is 30 November 2026. The assumptions and limitations below are stated before the first result exists.
+
+The recorder and verifier have been exercised locally. At the last documented operational checks (8 September), recorder A had been recording, while recorder B's service, timers, and Google Drive connection had been checked. Current host health, B's first verified real-data upload, seven qualifying full days, recovery, and a restore drill are not confirmed by this checkout. See the [recorder guide](docs/depth-recorder.md) and [production runbook](docs/runbook.md). Raw recordings and verification inputs are excluded from Git.
 
 ---
 
@@ -30,7 +32,7 @@ Existing open-source engines already model commissions and slippage, and one res
 
 > No widely used open-source backtester couples a market that reacts endogenously to the agent's own orders with a **learned** generative model of order flow, inside an engine that models execution realistically.
 
-So this repository is:
+The planned engine will include:
 
 - an **event-driven backtesting engine** with a full limit order book, price-time matching, a latency model, and fill and cost models at selectable fidelity;
 - a **replay mode**, the validated baseline, where the recorded market cannot react;
@@ -50,8 +52,8 @@ It is not a trading system, it will never connect to a broker, and it is not a n
 
 ## Data
 
-- **Primary: BTC/USDT on Binance spot.** Full-depth order-book updates are recorded continuously from September 2026 by two independent recorders in different cloud regions, because historical depth is not available at the free tier and cannot be obtained retroactively. The recorder is a separate small project. The recordings themselves are **not** in this repository.
-- **Validation: LOBSTER samples.** Level-3 NASDAQ order-book data for a handful of large-cap tickers, used to validate replay-mode correctness and to benchmark the stylised-facts battery against the academic literature. LOBSTER data is under an academic licence and is **not** redistributed here; the code to consume it is.
+- **Primary: BTC/USDT on Binance spot.** This repository's recorder captures public market-depth data. Two independent recorders in different regions are the acceptance target; their complete, verified multi-day dataset has not yet been established here. Historical depth cannot be obtained retroactively at the free tier. The recordings themselves are **not** in this repository.
+- **Planned validation: LOBSTER samples.** Level-3 NASDAQ order-book data for a handful of large-cap tickers would validate replay-mode correctness and benchmark the stylised-facts battery. LOBSTER data is under an academic licence and is **not** redistributed here. A LOBSTER loader is not implemented yet.
 - **Not used.** FX (no central order book to study), options and fixed income (data cost and pricing machinery out of scope).
 
 ## Assumptions and limitations, stated before any result
@@ -76,7 +78,7 @@ It is not a trading system, it will never connect to a broker, and it is not a n
 
 | Milestone | Date | Contents |
 |---|---|---|
-| Skeleton public | September 2026 | This README; repository layout; CI; the depth recorder running |
+| Data-capture foundation | September 2026 | Research question and roadmap; recorder, offline verifier, CI, deployment tooling; production acceptance pending |
 | **v1** | **30 November 2026** | Working engine; transaction-cost and slippage model; one reference strategy (intraday mean reversion); unit tests; results write-up |
 | v2 | February 2027 | Impact models; reactive market mode; second strategy (monthly momentum as a cost-insensitive control); profiling of the C++ core |
 | Experiments | March to April 2027 | The divergence experiment; the stylised-facts scorecard; the written answer to the question above |
@@ -85,19 +87,22 @@ Deferred beyond this year: a reinforcement-learning execution agent, a generator
 
 ## Repository layout
 
+The current checkout contains:
+
+```text
+src/depth_recorder/   Binance capture, storage, CLI, book reconstruction, verification
+tests/                Offline and local-protocol tests; live tests marked separately
+deploy/               systemd units, installation, offload, and verified pruning
+docs/                 Recorder guide, production runbook, decision log
+.github/workflows/     Offline CI on Python 3.11 and 3.12
+config.example.yaml   Safe configuration template
 ```
-engine/        C++ core: order book, matching engine, event loop (pybind11 bindings)
-pyengine/      Python API: strategies, fill and cost models, market modes, reports
-strategies/    reference strategies
-experiments/   one reproducible script and config per figure in the write-up
-data/          loaders and pointers to sources; no raw market data is committed
-tests/         unit, property-based and golden-master tests
-docs/          design notes and the results write-up
-```
+
+The planned `engine/`, `pyengine/`, `strategies/`, and `experiments/` directories do not exist yet. Local `data/`, `verification-input/`, and `verification-output/` are ignored.
 
 ## Getting started
 
-Build and run instructions arrive with v1. Until then the repository is a skeleton with tests for the parts that exist.
+The [recorder guide](docs/depth-recorder.md) has installation, configuration, recording, offline verification, testing, and deployment commands. The backtesting engine cannot be run yet.
 
 ## Reproducibility
 

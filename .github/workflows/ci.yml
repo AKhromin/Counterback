@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev]'
+      # Hosted CI is intentionally offline with respect to Binance. Live tests run only
+      # on the non-US recorder VMs or an explicitly provisioned self-hosted runner.
+      - run: pytest -m 'not live' --cov=depth_recorder --cov-report=term-missing --cov-fail-under=80
+      - run: ruff check .
+      - run: mypy src/depth_recorder

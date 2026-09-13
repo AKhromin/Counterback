@@ -1,0 +1,10 @@
+[Unit]
+Description=Verify and offload finalized depth data to object storage
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/depth-recorder/environment
+ExecStart=/opt/depth-recorder/offload.sh
+Nice=10
+IOSchedulingClass=idle

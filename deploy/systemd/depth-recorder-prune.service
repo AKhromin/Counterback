@@ -1,0 +1,8 @@
+[Unit]
+Description=Prune locally retained, remotely verified depth data
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/depth-recorder/prune_verified.py --data-root /var/lib/depth-recorder/data --minimum-age-hours 48
+Nice=10
+IOSchedulingClass=idle

@@ -1,0 +1,24 @@
+recorder_id: recorder-a
+symbols:
+  - BTCUSDT
+streams:
+  - depth@100ms
+  - trade
+  - bookTicker
+websocket_base_url: wss://data-stream.binance.vision:443
+rest_base_url: https://data-api.binance.vision
+output_dir: /var/lib/depth-recorder/data
+snapshot_interval_seconds: 900
+snapshot_jitter_fraction: 0.10
+stall_timeout_seconds: 30
+freshness_failure_seconds: 300
+proactive_reconnect_seconds: 82800
+reconnect_min_seconds: 1
+reconnect_max_seconds: 60
+heartbeat_interval_seconds: 60
+heartbeat_url_env: DEPTH_RECORDER_HEARTBEAT_URL
+disk_failure_percent: 80
+compression_level: 6
+queue_size: 10000
+log_level: INFO
+service_mode: native
