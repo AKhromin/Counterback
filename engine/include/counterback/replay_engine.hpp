@@ -22,8 +22,15 @@ public:
     // Snapshot order is the Python verifier's source-list order; see replay docs.
     ReplayEngine(std::string symbol, std::vector<DepthSnapshot> snapshots);
     std::string apply(const DepthUpdate& event);
-    const std::optional<HistoricalBook>& book() const { return book_; }
-    const ReplayStatistics& statistics() const { return stats_; }
+    
+    const std::optional<HistoricalBook>& book() const { 
+        return book_; 
+    }
+    
+    const ReplayStatistics& statistics() const { 
+        return stats_; 
+    }
+    
     // Stable JSON, full observed depth, best prices and snapshot-horizon validity.
     void write_checkpoint(std::ostream& out, bool summary = false) const;
 

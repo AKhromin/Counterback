@@ -59,17 +59,35 @@ public:
     using Levels = std::map<Price, Quantity>;
     explicit HistoricalBook(const DepthSnapshot& snapshot);
     DepthApplyResult apply(const DepthUpdate& event);
-    std::uint64_t last_update_id() const { return last_update_id_; }
-    Price bid_boundary() const { return bid_boundary_; }
-    Price ask_boundary() const { return ask_boundary_; }
+    
+    std::uint64_t last_update_id() const { 
+        return last_update_id_; 
+    }
+
+    Price bid_boundary() const { 
+        return bid_boundary_; 
+    }
+    
+    Price ask_boundary() const { 
+        return ask_boundary_; 
+    }
+    
     bool bid_trusted() const;
     bool ask_trusted() const;
-    bool top_trusted() const { return bid_trusted() && ask_trusted(); }
+    bool top_trusted() const { 
+        return bid_trusted() && ask_trusted(); 
+    }
+    
     std::optional<PriceLevel> best_bid() const;
     std::optional<PriceLevel> best_ask() const;
     // Observed levels only; absence outside the snapshot horizon means unknown.
-    const Levels& bids() const { return bids_; }
-    const Levels& asks() const { return asks_; }
+    const Levels& bids() const { 
+        return bids_; 
+    }
+    
+    const Levels& asks() const { 
+        return asks_; 
+    }
 
 private:
     std::string symbol_;
