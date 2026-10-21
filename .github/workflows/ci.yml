@@ -13,7 +13,11 @@ jobs:
         build-type: [Debug, Release]
     steps:
       - uses: actions/checkout@v4
-      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e '.[dev]'
+      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DCOUNTERBACK_PYTHON_TESTS=ON -DPython3_EXECUTABLE=$(which python)
       - run: cmake --build build --parallel
       - run: ctest --test-dir build --output-on-failure
       - run: ./build/engine/counterback_demo
@@ -31,8 +35,10 @@ jobs:
           cache: pip
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e '.[dev]'
+      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - run: cmake --build build --parallel
       # Hosted CI is intentionally offline with respect to Binance. Live tests run only
       # on the non-US recorder VMs or an explicitly provisioned self-hosted runner.
       - run: pytest -m 'not live' --cov=depth_recorder --cov-report=term-missing --cov-fail-under=80
       - run: ruff check .
-      - run: mypy src/depth_recorder
+      - run: mypy src/depth_recorder src/counterback_replay

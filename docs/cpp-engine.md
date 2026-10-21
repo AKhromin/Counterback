@@ -2,8 +2,9 @@
 
 The first engine slice is a standalone C++17 library for **synthetic individual
 orders**, with a runnable example and offline tests. It has no third-party C++
-dependencies. Historical replay, Python bindings, strategy callbacks, fees,
-portfolio accounting and reactive markets remain future work.
+dependencies. A separate historical L2 replay library is described in
+[historical replay](historical-replay.md). Python bindings, strategy callbacks,
+fees, portfolio accounting and reactive markets remain future work.
 
 ## Build and run
 
@@ -34,8 +35,9 @@ Link CMake consumers against `counterback::engine` and include
   copied or moved because its order index holds iterators into its queues.
 - Prices and quantities are signed 64-bit integer **ticks and lots**, never
   floating point. Callers choose the instrument's tick/lot sizes and must reject
-  decimal values that cannot be represented exactly; there is no conversion
-  adapter yet. A price of 100 in the demo means 100 ticks, not 100 USDT.
+  decimal values that cannot be represented exactly. The historical adapter
+  provides exact conversion for its separate L2 input. A price of 100 in the
+  matching demo means 100 ticks, not 100 USDT.
 - IDs are nonzero unsigned 64-bit integers, unique for the entire engine
   lifetime, including after filling, cancellation or expiry. Invalid submissions
   throw `std::invalid_argument` before changing state and do not reserve an ID.
@@ -84,7 +86,7 @@ cmake --build build/sanitized --parallel
 ctest --test-dir build/sanitized --output-on-failure
 ```
 
-## Boundary with Binance L2 and next milestone
+## Boundary with Binance L2
 
 **Do not translate Binance depth deltas into submissions to this matcher.** The
 recorder stores aggregated absolute quantities at prices, without individual
@@ -92,14 +94,14 @@ order IDs, arrival times or known queue positions. A size reduction does not say
 whether an order executed or was cancelled. This matcher establishes correctness
 for synthetic order-level flow; it does not establish historical fill realism.
 
-The existing Python `HorizonBook` remains the recorder's L2 reconstruction path,
-including snapshot-horizon and sequence checks. The next engine milestone is a
-separate external-L2 state and replay adapter, with exact decimal-to-tick/lot
-conversion, snapshot/delta sequencing, gap handling and explicit horizon validity.
-It should consume a restored and verified recording, then expose only information
-available at the current replay event. Simulated strategy execution against that
+The Python `HorizonBook` remains the correctness reference for the separate
+`counterback::historical` library and offline adapter. The adapter provides exact
+decimal-to-tick/lot conversion, snapshot/delta sequencing, gap handling and explicit
+horizon validity. See [historical replay](historical-replay.md) for the input
+contract, reference compatibility limitation and real-data validation.
+Simulated strategy execution against that
 state needs an explicit liquidity-consumption/fill model; passive FIFO fills
 cannot be inferred from these depth recordings alone.
 
-No verified historical dataset or full-day replay is bundled or claimed by this
-implementation. Existing local recordings and configuration are untouched.
+No historical dataset is bundled. Existing recordings, deployed recorder behavior
+and matching-engine implementation are untouched.

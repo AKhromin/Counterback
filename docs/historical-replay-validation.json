@@ -1,0 +1,148 @@
+{
+  "actual_checkpoints_sha256": "8c808adb12198790cf7f13391f2f030ed14eec904ebda7faec7c76cfe0614e0b",
+  "cpp_reference_comparison": {
+    "applied": 862298,
+    "ask_boundary": 7916887,
+    "ask_trusted": true,
+    "best_ask": [
+      7818921,
+      251657
+    ],
+    "best_bid": [
+      7818920,
+      67886
+    ],
+    "bid_boundary": 7747142,
+    "bid_trusted": true,
+    "checkpoints_compared": 172,
+    "duplicates": 863555,
+    "event": 1727164,
+    "full_observed_depth_equal": true,
+    "gaps": [],
+    "invalid_intervals": [
+      [
+        100071518696,
+        100071596660
+      ]
+    ],
+    "kind": "summary",
+    "last_depth_update_id": 100126273281,
+    "last_update_id": 100126273281,
+    "outer_unseen_removals": 167056,
+    "segments": 101,
+    "sequence_gaps": 0,
+    "spread_ticks": 1,
+    "stale": 0,
+    "status": "applied",
+    "structural_errors": [],
+    "trusted_intervals": [
+      [
+        100071596661,
+        100126273281
+      ]
+    ],
+    "unanchored": 1311,
+    "unseen_removals": 2035961
+  },
+  "date_utc": "2026-09-14",
+  "environment": "macOS arm64, Apple Clang 21, Python 3.11.0",
+  "evidence": {
+    "checkpoint_every": 10000,
+    "date_utc": "2026-09-14",
+    "events_sha256": "f40223b6c7df8d0c91ed2460f42e6a3a96b71de2bba5437747b9822eb1c760f3",
+    "expected_sha256": "8c808adb12198790cf7f13391f2f030ed14eec904ebda7faec7c76cfe0614e0b",
+    "lot_size": "0.00001000",
+    "manifest_sha256": [
+      "4394138ee033b1405ee84a9beeef92cef46b1f7b0ccb8d2b3ccb897cb86b575e",
+      "a1bcf55ecda546c83e7f5e1687d4ac0a1f3c0749b828a3eb4eda306a0a070abe"
+    ],
+    "manifests": [
+      {
+        "config_hash": "9a04f5c6ebdc72a59fc65d8c98aee918122eef41f6b88e4dc5f9f5df9f194d5e",
+        "recorder_id": "recorder-a",
+        "run_ids": [
+          "8c828528-c11c-4e34-85b6-fbb4a1336f13"
+        ]
+      },
+      {
+        "config_hash": "5ca5f74abf8cbd6c6dd1758d8dcf1bb8d4c178345bf588753dfd620173430281",
+        "recorder_id": "recorder-b",
+        "run_ids": [
+          "c615daed-7706-4a57-9d25-58217d47b2d7"
+        ]
+      }
+    ],
+    "metadata": [
+      {
+        "name": "exchange-info-000500-950583.json.zst",
+        "recorder_id": "recorder-a",
+        "sha256": "a66952cd0b44170f59cd638b5ad32a032e874f13a950fd96eaa4099d3c66bef6"
+      },
+      {
+        "name": "exchange-info-000500-166333.json.zst",
+        "recorder_id": "recorder-b",
+        "sha256": "2c90f7c6347ceff7af9d3b9f7b6d63972fdd982fcdced448ece132389ba4aed0"
+      }
+    ],
+    "schema_version": 1,
+    "snapshots": 198,
+    "symbol": "BTCUSDT",
+    "tick_size": "0.01000000",
+    "verification_report_sha256": "e2a0b8494270f14b8f6f4af238ccc6cb1cf4d0b077be4a49a5311c0f8429ac66"
+  },
+  "limits": [
+    "Real depth checked every 10000 original recorder records and at final state, not every event.",
+    "Preserves verifier source-list snapshot selection; no global snapshot sort.",
+    "Initial unanchored prefix remains invalid; outer snapshot horizons remain unknown.",
+    "Ticker comparisons are performed by Python verification only.",
+    "Linux and Python 3.12 checks configured in CI, not run locally."
+  ],
+  "symbol": "BTCUSDT",
+  "tests": {
+    "ctest_asan_ubsan": "3/3 passed",
+    "ctest_debug": "3/3 passed",
+    "ctest_release": "3/3 passed",
+    "live_tests_deselected": 2,
+    "mypy": "passed",
+    "python_passed": 86,
+    "recorder_coverage_percent": 82.83,
+    "ruff": "passed"
+  },
+  "validation_date": "2026-10-21",
+  "verification": {
+    "joint_update_id_coverage": {
+      "covered_ids": 54754586,
+      "first_update_id": 100071518696,
+      "last_update_id": 100126273281,
+      "missing": [],
+      "ratio": 1.0,
+      "total_ids": 54754586
+    },
+    "quality_issues": [],
+    "reconstruction": {
+      "last_depth_update_id": 100126273281,
+      "outer_unseen_removals": 167056,
+      "segments": 101,
+      "sequence_gaps": 0,
+      "structural_errors": [],
+      "ticker_checks": 607547,
+      "ticker_mismatches": 0,
+      "ticker_skipped_untrusted": 0,
+      "trusted_coverage": {
+        "covered_ids": 54676621,
+        "first_update_id": 100071518696,
+        "last_update_id": 100126273281,
+        "missing": [
+          [
+            100071518696,
+            100071596660
+          ]
+        ],
+        "ratio": 0.9985761010045807,
+        "total_ids": 54754586
+      },
+      "unseen_removals": 2035961
+    },
+    "status": "pass"
+  }
+}
