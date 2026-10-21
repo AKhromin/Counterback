@@ -102,6 +102,11 @@ The verifier:
 
 Verification reports are immutable. Re-running the same day into the same output directory fails instead of overwriting evidence.
 
+Verified BTCUSDT days can now feed the separate C++ historical L2 replay through
+an offline integer export. See [historical replay](historical-replay.md) for the
+workflow, exact instrument conversion, snapshot-source ordering compatibility and
+horizon/gap limitations. The live recorder and this verifier are unchanged.
+
 ## Tests
 
 ```bash

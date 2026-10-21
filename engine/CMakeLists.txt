@@ -12,8 +12,33 @@ endif()
 add_executable(counterback_demo examples/matching_demo.cpp)
 target_link_libraries(counterback_demo PRIVATE counterback::engine)
 
+add_library(counterback_historical src/historical_book.cpp src/replay_engine.cpp)
+add_library(counterback::historical ALIAS counterback_historical)
+target_include_directories(counterback_historical PUBLIC include)
+target_compile_features(counterback_historical PUBLIC cxx_std_17)
+set_target_properties(counterback_historical PROPERTIES CXX_EXTENSIONS OFF)
+if(MSVC)
+    target_compile_options(counterback_historical PRIVATE /W4 /WX)
+else()
+    target_compile_options(counterback_historical PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+add_executable(counterback_replay examples/historical_replay.cpp)
+target_link_libraries(counterback_replay PRIVATE counterback::historical)
+
 if(BUILD_TESTING)
     add_executable(counterback_engine_tests tests/matching_engine_test.cpp)
     target_link_libraries(counterback_engine_tests PRIVATE counterback::engine)
     add_test(NAME matching_engine COMMAND counterback_engine_tests)
+    add_executable(counterback_historical_tests tests/historical_replay_test.cpp)
+    target_link_libraries(counterback_historical_tests PRIVATE counterback::historical)
+    add_test(NAME historical_replay COMMAND counterback_historical_tests)
+    if(COUNTERBACK_PYTHON_TESTS)
+        find_package(Python3 3.11 REQUIRED COMPONENTS Interpreter)
+        add_test(NAME historical_python_reference
+            COMMAND "${Python3_EXECUTABLE}" -m pytest
+                "${PROJECT_SOURCE_DIR}/tests/test_historical_replay.py" -q)
+        set_tests_properties(historical_python_reference PROPERTIES
+            WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+            ENVIRONMENT "COUNTERBACK_REPLAY_BINARY=$<TARGET_FILE:counterback_replay>")
+    endif()
 endif()
