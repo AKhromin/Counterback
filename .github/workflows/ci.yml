@@ -5,6 +5,19 @@ on:
   pull_request:
 
 jobs:
+  engine:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        build-type: [Debug, Release]
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
+      - run: cmake --build build --parallel
+      - run: ctest --test-dir build --output-on-failure
+      - run: ./build/engine/counterback_demo
+
   test:
     runs-on: ubuntu-latest
     strategy:

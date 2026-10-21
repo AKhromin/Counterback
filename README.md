@@ -2,7 +2,7 @@
 
 **A backtester where the market can answer back.** An execution-realistic backtesting engine, extended to run strategies against order books that react to them.
 
-> **Status: data-capture foundation (13 September 2026).** This repository now contains the `depth-recorder` Python package (v0.1.1): Binance Spot capture, offline two-recorder verification, tests, CI, systemd deployment, and verified rclone offload tooling. The backtesting engine, strategy interface, reactive market, and reported experiment results are not implemented yet. The target for v1 is 30 November 2026. The assumptions and limitations below are stated before the first result exists.
+> **Status: C++ matching foundation (21 October 2026).** This repository contains the `depth-recorder` Python package (v0.1.1) and a standalone C++17 synthetic order-matching engine with limit/market orders, price-time priority, partial fills, cancellation, deterministic tests and a runnable demo. Historical replay, strategy bindings, portfolio/cost accounting, reactive markets and reported experiment results are not implemented yet. The target for v1 is 30 November 2026. The assumptions and limitations below are stated before the first result exists.
 
 The recorder and verifier have been exercised locally. At the last documented operational checks (8 September), recorder A had been recording, while recorder B's service, timers, and Google Drive connection had been checked. Current host health, B's first verified real-data upload, seven qualifying full days, recovery, and a restore drill are not confirmed by this checkout. See the [recorder guide](docs/depth-recorder.md) and [production runbook](docs/runbook.md). Raw recordings and verification inputs are excluded from Git.
 
@@ -91,18 +91,29 @@ The current checkout contains:
 
 ```text
 src/depth_recorder/   Binance capture, storage, CLI, book reconstruction, verification
+engine/               C++17 synthetic matching library, example and deterministic tests
+CMakeLists.txt        C++ build and CTest entry point
 tests/                Offline and local-protocol tests; live tests marked separately
 deploy/               systemd units, installation, offload, and verified pruning
 docs/                 Recorder guide, production runbook, decision log
-.github/workflows/     Offline CI on Python 3.11 and 3.12
+.github/workflows/     Python CI plus C++ Debug/Release on Linux and macOS
 config.example.yaml   Safe configuration template
 ```
 
-The planned `engine/`, `pyengine/`, `strategies/`, and `experiments/` directories do not exist yet. Local `data/`, `verification-input/`, and `verification-output/` are ignored.
+The planned `pyengine/`, `strategies/`, and `experiments/` directories do not exist yet. Local `data/`, `verification-input/`, and `verification-output/` are ignored.
 
 ## Getting started
 
-The [recorder guide](docs/depth-recorder.md) has installation, configuration, recording, offline verification, testing, and deployment commands. The backtesting engine cannot be run yet.
+The [recorder guide](docs/depth-recorder.md) has installation, configuration, recording, offline verification, testing, and deployment commands. The [C++ engine guide](docs/cpp-engine.md) has build commands, matching semantics and the L2/replay boundary. Run the synthetic matching demo with:
+
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+cmake --build build --parallel
+ctest --test-dir build --output-on-failure
+./build/engine/counterback_demo
+```
+
+This demo exercises synthetic order matching; a historical backtest cannot be run yet.
 
 ## Reproducibility
 

@@ -5,6 +5,7 @@ import json
 import time
 from datetime import date
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -237,12 +238,35 @@ async def test_websocket_supervisor_stall_and_proactive_paths(
     assert '"reason":"proactive_reconnect"' in events
 
 
+@pytest.mark.parametrize(
+    ("message_age", "disk_used_percent", "expected_suffix"),
+    [
+        (0, 20, ""),
+        (None, 20, "/fail"),
+        (301, 20, "/fail"),
+        (0, 80, "/fail"),
+        (0, 95, "/fail"),
+    ],
+    ids=["healthy", "no-messages", "stale-messages", "disk-at-threshold", "disk-over-threshold"],
+)
 async def test_heartbeat_success_and_failure(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    message_age: int | None,
+    disk_used_percent: int,
+    expected_suffix: str,
 ) -> None:
     monkeypatch.setenv("DEPTH_RECORDER_HEARTBEAT_URL", "https://hc-ping.test/id")
+    # Host disk pressure must not decide the outcome of this unit test.
+    monkeypatch.setattr(
+        "depth_recorder.recorder.shutil.disk_usage",
+        lambda _: SimpleNamespace(
+            total=100, used=disk_used_percent, free=100 - disk_used_percent
+        ),
+    )
     recorder = service(tmp_path)
-    recorder.last_message_mono = __import__("time").monotonic()
+    if message_age is not None:
+        recorder.last_message_mono = time.monotonic() - message_age
     session = FakeSession([FakeResponse(200)])
     sleeps = 0
 
@@ -255,14 +279,11 @@ async def test_heartbeat_success_and_failure(
     monkeypatch.setattr("depth_recorder.recorder.asyncio.sleep", one_iteration)
     with pytest.raises(__import__("asyncio").CancelledError):
         await recorder._heartbeat_loop(session)  # type: ignore[arg-type]
-    assert session.calls[0][0] == "https://hc-ping.test/id"
-
-    unhealthy = service(tmp_path / "unhealthy")
-    session = FakeSession([FakeResponse(200)])
-    sleeps = 0
-    with pytest.raises(__import__("asyncio").CancelledError):
-        await unhealthy._heartbeat_loop(session)  # type: ignore[arg-type]
-    assert session.calls[0][0].endswith("/fail")
+    assert len(session.calls) == 1
+    assert session.calls[0][0] == f"https://hc-ping.test/id{expected_suffix}"
+    payload = session.calls[0][1]
+    assert payload is not None
+    assert payload["disk_free_percent"] == 100 - disk_used_percent
 
 
 async def test_service_run_starts_and_shuts_down_cleanly(
