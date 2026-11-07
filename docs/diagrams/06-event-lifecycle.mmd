@@ -1,0 +1,27 @@
+sequenceDiagram
+    participant Feed as Validated event source
+    participant Engine as BacktestEngine / EventQueue
+    participant Market as MarketModel
+    participant Strategy as Python strategy
+    participant Orders as OrderManager
+    participant Exec as ExecutionModel
+    participant Ledger as Portfolio / Journal
+    Feed->>Engine: Next causal market event
+    Engine->>Market: Apply in exchange sequence
+    Market-->>Engine: Read-only view and trust state
+    Engine->>Strategy: Deliver visible event and portfolio view
+    Strategy-->>Engine: Order or cancel requests
+    Engine->>Orders: Validate and track requests
+    Orders->>Engine: Schedule arrival after latency
+    Note over Engine,Market: Process earlier queued events before arrival
+    Engine->>Exec: Execute at arrival-time market state
+    Exec->>Market: Query liquidity or delegate order-level matching
+    Exec-->>Engine: Fill records and order status
+    Engine->>Ledger: Apply actual fills and fees, journal once
+    alt Reactive backend
+        Engine->>Market: Commit executed action and schedule response
+    else Historical replay
+        Note over Market: Historical path remains exogenous
+    end
+    Engine->>Engine: Schedule strategy notification after latency
+    Engine->>Ledger: Mark equity only under declared valuation policy

@@ -28,6 +28,11 @@ and builds the binary before the complete Python regression suite. Python replay
 tests explicitly skip if no executable exists; set `COUNTERBACK_REPLAY_BINARY`
 when using another build directory. CI always provides an executable.
 
+WP1 adds a [dataset inventory/preparation cache](dataset-preparation.md) around
+the unchanged day verifier/exporter and a [frozen simulation contract](v1-execution-contract.md).
+The optional Python CTest also runs the policy and dataset preparation tests.
+These helpers do not yet implement a trading runtime.
+
 ## Restore, verify, export, replay, compare
 
 Use a completed UTC day with final manifests, compressed depth streams,

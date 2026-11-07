@@ -39,6 +39,6 @@ jobs:
       - run: cmake --build build --parallel
       # Hosted CI is intentionally offline with respect to Binance. Live tests run only
       # on the non-US recorder VMs or an explicitly provisioned self-hosted runner.
-      - run: pytest -m 'not live' --cov=depth_recorder --cov-report=term-missing --cov-fail-under=80
+      - run: pytest -m 'not live' --cov=depth_recorder --cov=counterback_replay --cov-report=term-missing --cov-fail-under=80
       - run: ruff check .
       - run: mypy src/depth_recorder src/counterback_replay

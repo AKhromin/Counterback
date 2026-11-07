@@ -1,0 +1,45 @@
+classDiagram
+    direction LR
+    class ReplayEngine {
+        +apply(DepthUpdate)
+        +book()
+        +statistics()
+        +write_checkpoint()
+    }
+    class HistoricalBook {
+        +apply(DepthUpdate)
+        +best_bid()
+        +best_ask()
+        +top_trusted()
+        +bids()
+        +asks()
+    }
+    class ReplayStatistics
+    class DepthSnapshot
+    class DepthUpdate
+    class Observation
+    class PriceLevel
+    class MatchingEngine {
+        +submit(Order)
+        +cancel(OrderId)
+        +find(OrderId)
+        +orders(side)
+    }
+    class Order
+    class RestingOrder
+    class ExecutionReport
+    class Trade
+    ReplayEngine *-- "0..1" HistoricalBook
+    ReplayEngine *-- ReplayStatistics
+    ReplayEngine *-- "0..*" DepthSnapshot
+    ReplayEngine ..> DepthUpdate
+    HistoricalBook ..> DepthSnapshot
+    HistoricalBook ..> DepthUpdate
+    DepthSnapshot *-- Observation
+    DepthUpdate *-- Observation
+    DepthSnapshot *-- "0..*" PriceLevel
+    DepthUpdate *-- "0..*" PriceLevel
+    MatchingEngine ..> Order
+    MatchingEngine *-- "0..*" RestingOrder
+    MatchingEngine ..> ExecutionReport
+    ExecutionReport *-- "0..*" Trade

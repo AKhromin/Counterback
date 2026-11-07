@@ -36,7 +36,9 @@ if(BUILD_TESTING)
         find_package(Python3 3.11 REQUIRED COMPONENTS Interpreter)
         add_test(NAME historical_python_reference
             COMMAND "${Python3_EXECUTABLE}" -m pytest
-                "${PROJECT_SOURCE_DIR}/tests/test_historical_replay.py" -q)
+                "${PROJECT_SOURCE_DIR}/tests/test_historical_replay.py"
+                "${PROJECT_SOURCE_DIR}/tests/test_wp1_contract.py"
+                "${PROJECT_SOURCE_DIR}/tests/test_wp1_dataset.py" -q)
         set_tests_properties(historical_python_reference PROPERTIES
             WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
             ENVIRONMENT "COUNTERBACK_REPLAY_BINARY=$<TARGET_FILE:counterback_replay>")

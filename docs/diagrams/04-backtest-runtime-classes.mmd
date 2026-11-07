@@ -1,0 +1,74 @@
+classDiagram
+    direction TB
+    class BacktestEngine {
+        +run(config)
+        +dispatch(event)
+    }
+    class EventQueue {
+        +push(event)
+        +pop_next()
+    }
+    class SimulationClock {
+        +now()
+        +advance_to(time)
+    }
+    class StrategyBridge {
+        +on_event(view, trades, clock, portfolio)
+    }
+    class Strategy {
+        <<interface>>
+        +on_event(book, trades, clock, portfolio)
+    }
+    class MarketModel {
+        <<interface>>
+        +advance(event)
+        +view()
+        +on_strategy_action(action)
+    }
+    class ReplayMarket
+    class SyntheticMarket
+    class ReactiveMarket
+    class OrderManager {
+        +submit(request)
+        +cancel(request)
+        +on_execution(outcome)
+    }
+    class LatencyModel {
+        +arrival_time(action)
+        +notification_time(outcome)
+    }
+    class ExecutionModel {
+        <<interface>>
+        +execute(order, market, clock)
+    }
+    class Portfolio {
+        +apply_fill(fill, fee)
+        +mark(view, policy)
+        +snapshot()
+    }
+    class FeeModel {
+        +calculate(fill)
+    }
+    class ImpactCostModel {
+        +calculate(action, context)
+    }
+    class EventJournal {
+        +append(event)
+        +finalize()
+    }
+    BacktestEngine *-- EventQueue
+    BacktestEngine *-- SimulationClock
+    BacktestEngine *-- OrderManager
+    BacktestEngine *-- Portfolio
+    BacktestEngine *-- EventJournal
+    BacktestEngine --> StrategyBridge
+    StrategyBridge --> Strategy
+    BacktestEngine --> MarketModel
+    MarketModel <|.. ReplayMarket
+    MarketModel <|.. SyntheticMarket
+    MarketModel <|.. ReactiveMarket
+    OrderManager --> LatencyModel
+    BacktestEngine --> ExecutionModel
+    ExecutionModel --> MarketModel
+    BacktestEngine --> FeeModel
+    BacktestEngine --> ImpactCostModel

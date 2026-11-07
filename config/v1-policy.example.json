@@ -1,0 +1,26 @@
+{
+  "assumptions": {
+    "fee_rate": "benchmark only; not verified exchange/account pricing",
+    "latency": "synthetic; zero in this fixture example",
+    "runtime_implemented": false,
+    "starting_cash_usdt": "10000",
+    "starting_inventory_btc": "0"
+  },
+  "policy": {
+    "account": "cash-funded-spot-long-only",
+    "availability": "merged-receive-prefix-bridge-1",
+    "end_of_run": "expire-pending-actions-cancel-local-remainders-mark-open-position",
+    "execution": "visible-depth-taker-with-crossing-only-limits",
+    "fee_rate": "0.001",
+    "fee_rounding": "cumulative-per-order-ceiling-with-incremental-fill-charges",
+    "invalid_data": "wait-for-initial-anchor-then-halt-on-required-trust-loss",
+    "notification_latency_ns": 0,
+    "order_latency_ns": 0,
+    "quote_decimals": 8,
+    "replenishment": "reset-consumption-only-on-new-absolute-level-observation",
+    "valuation": "best-bid-mark-for-long-inventory-no-assumed-liquidation",
+    "version": "counterback-v1-contract-1",
+    "warmup_trusted_updates": 0
+  },
+  "schema_version": 1
+}

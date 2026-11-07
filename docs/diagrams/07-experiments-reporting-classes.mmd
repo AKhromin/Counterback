@@ -1,0 +1,33 @@
+classDiagram
+    direction LR
+    class ExperimentRunner {
+        +run_sweep(scenarios)
+    }
+    class RunConfig
+    class RunManifest
+    class RunResult
+    class MetricsCalculator {
+        +equity_and_drawdown()
+        +cost_and_fill_diagnostics()
+    }
+    class DivergenceAnalyzer {
+        +paired_difference()
+        +noise_floor()
+        +confidence_interval()
+    }
+    class RealismSuite {
+        +stylised_facts()
+        +impact_and_round_trip_checks()
+    }
+    class ReportBuilder {
+        +write_html()
+    }
+    ExperimentRunner --> RunConfig
+    ExperimentRunner ..> RunResult
+    RunResult *-- RunManifest
+    RunResult --> MetricsCalculator
+    RunResult --> DivergenceAnalyzer
+    RunResult --> RealismSuite
+    MetricsCalculator --> ReportBuilder
+    DivergenceAnalyzer --> ReportBuilder
+    RealismSuite --> ReportBuilder

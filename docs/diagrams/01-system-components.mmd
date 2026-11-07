@@ -1,0 +1,47 @@
+flowchart TB
+    subgraph data[Offline data foundation]
+        binance["External input: Binance public feeds"]
+        m01["M01 Capture<br/>E - v1 foundation"]
+        m02["M02 Raw storage<br/>E - v1 foundation"]
+        m03["M03 Verification<br/>E - v1 foundation"]
+        m04["M04 Integer ingest<br/>E - v1 foundation"]
+        binance --> m01 --> m02 --> m03 --> m04
+    end
+    subgraph runtime[Simulation and strategy integration]
+        m05["M05 Historical market state<br/>E - v1 baseline, reused by v2"]
+        m06["M06 Synthetic matching<br/>E - v1 foundation, reusable by v2"]
+        m07["M07 Simulation scheduling<br/>P - v1 core, reused by v2"]
+        m08["M08 Market backends<br/>P - v1 replay/synthetic, v2 reactive"]
+        m09["M09 Orders and execution<br/>P - v1 core, optional v2 refinements"]
+        m10["M10 Accounting and costs<br/>P - v1 accounting, v2 impact"]
+        m11["M11 Strategy API<br/>P - v1 API, reused by v2 strategies"]
+        m12["M12 Reactive model adapters<br/>P - v2, optional learned adapter later"]
+        m07 -->|dispatch market events| m08
+        m08 -->|replay adapter uses| m05
+        m08 -->|order-level adapter uses| m06
+        m07 <-->|visible state and order requests| m11
+        m07 -->|scheduled arrivals and cancels| m09
+        m09 -->|state queries, matching and committed actions| m08
+        m09 -->|fills and execution status| m10
+        m10 -->|account updates and valuation| m07
+        m08 -->|reactive backend only| m12
+        m12 -->|schedule response events| m07
+    end
+    subgraph research[Python experiment and analysis layer]
+        m13["M13 Experiments<br/>P - v1 harness, v2 cases, later study"]
+        m14["M14 Evaluation and reports<br/>P - v1 reports, v2/research extensions"]
+    end
+    subgraph support[Cross-cutting capabilities]
+        m15["M15 Reproducibility<br/>E/P - v1 foundation, extended in v2"]
+        m16["M16 Operations and validation<br/>E/P - v1 foundation, v2 validation"]
+        m17["M17 Performance profiling<br/>P - v2"]
+    end
+    m04 -->|validated integer events| m05
+    m13 -->|resolved configurations and seeds| m07
+    m07 -->|event journal and run provenance| m15
+    m10 -->|fill, cost and equity records| m15
+    m02 -->|capture manifests and hashes| m15
+    m15 -->|reproducible result artifacts| m14
+    m16 -.->|capture operations and checks| m01
+    m16 -.->|implementation acceptance gates| m07
+    m17 -.->|fixed-workload measurements| m07

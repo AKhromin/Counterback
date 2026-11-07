@@ -1,0 +1,40 @@
+classDiagram
+    direction LR
+    class ExecutionModel {
+        <<interface>>
+        +execute(order, market, clock)
+    }
+    class MidSpreadExecution
+    class VolumeParticipationExecution
+    class QueueEstimateExecution
+    class MatchingExecution
+    class LiquidityBudget {
+        +available(price, time)
+        +consume(price, quantity)
+    }
+    class MarketView {
+        +symbol
+        +visible_time
+        +last_update_id
+        +bid_trusted
+        +ask_trusted
+        +observed_depth
+    }
+    class ResponseModel {
+        <<interface>>
+        +respond(state, action, elapsed, rng)
+    }
+    class MechanisticResponse
+    class GeneratorAdapter {
+        +capabilities()
+        +next_events(context)
+    }
+    ExecutionModel <|.. MidSpreadExecution
+    ExecutionModel <|.. VolumeParticipationExecution
+    ExecutionModel <|.. QueueEstimateExecution
+    ExecutionModel <|.. MatchingExecution
+    ExecutionModel ..> MarketView
+    VolumeParticipationExecution --> LiquidityBudget
+    QueueEstimateExecution --> LiquidityBudget
+    ResponseModel <|.. MechanisticResponse
+    ResponseModel ..> GeneratorAdapter : optional background source

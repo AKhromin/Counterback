@@ -1,0 +1,387 @@
+{
+  "drive_inventory": {
+    "candidate_days": 62,
+    "days_with_missing_joint_depth_hours": [
+      {
+        "date_utc": "2026-09-06",
+        "hours": [
+          "00",
+          "01",
+          "02",
+          "03",
+          "04",
+          "05",
+          "06",
+          "07",
+          "08",
+          "09",
+          "10",
+          "11",
+          "12",
+          "13",
+          "14",
+          "15",
+          "16",
+          "17",
+          "18",
+          "19",
+          "20",
+          "21"
+        ]
+      }
+    ],
+    "end": "2026-11-06",
+    "evaluation_start": "2026-10-15",
+    "inventory_id": "9604ac532dab10d72faae2b2d9759201acf00697a5f7e952cc746763874c9277",
+    "observed_logical_bytes": 42559734321,
+    "observed_manifest_filenames": 122,
+    "partitions": {
+      "development": 39,
+      "evaluation": 23
+    },
+    "payloads_verified": false,
+    "sha256": "2a6eef39499c4983080f937cf6e871d0f85086b0ce76fadbd023d0b1f6502b1c",
+    "source_folders": {
+      "recorder-a": 62,
+      "recorder-b": 60
+    },
+    "start": "2026-09-06"
+  },
+  "limitations": [
+    "Drive discovery is mounted-folder metadata only; full archive payload qualification remains pending.",
+    "Prepared data is reconstruction-qualified; the WP2 causal availability runtime is not implemented.",
+    "2026-09-10 has preserved gaps/untrusted intervals; a passing report is not uninterrupted tradability.",
+    "Public-trade payloads are integrity-hashed, not semantically validated for volume execution.",
+    "Release/sanitizer and live/remote-host checks were not rerun for WP1."
+  ],
+  "local_catalogue": {
+    "batch_exit_code": 2,
+    "days": [
+      {
+        "date_utc": "2026-09-10",
+        "partition": "development",
+        "state": "prepared"
+      },
+      {
+        "date_utc": "2026-09-11",
+        "partition": "development",
+        "state": "unavailable"
+      },
+      {
+        "date_utc": "2026-09-12",
+        "partition": "development",
+        "reason": "insufficient finalized recorder inputs",
+        "state": "unavailable"
+      },
+      {
+        "date_utc": "2026-09-13",
+        "partition": "development",
+        "state": "unavailable"
+      },
+      {
+        "date_utc": "2026-09-14",
+        "partition": "development",
+        "state": "prepared"
+      }
+    ],
+    "reason": "Selected 2026-09-12 lacks a second local finalized recorder copy",
+    "sha256": "e0632e88bf25156f3a00b747378f0bdedcdb50affac4b66a6210f4d89cab6a3e"
+  },
+  "prepared_days": [
+    {
+      "artifact_sha256": {
+        "replay/events.l2": "1dbd86caca937cbf1f3f9c329bc0a01b0bbfcaf602ef31059e16174d3dc77365",
+        "replay/evidence.json": "40f3ea9558842e628c3a1bb4d4d3869156d47c6b116597aa5078b4d01858f987",
+        "replay/expected.ndjson": "c97941a7aea2bcee84dc87a1c6b657d445ff481c83e182868b439159c250e573",
+        "verification/verification-2026-09-10-btcusdt.json": "c8827e430a19589417d46ee2419aebc54b5bd75e270d73f35a20618700efe427"
+      },
+      "cpp_comparison": {
+        "applied": 862759,
+        "ask_boundary": 7760424,
+        "ask_trusted": true,
+        "best_ask": [
+          7656873,
+          14517
+        ],
+        "best_bid": [
+          7656872,
+          473474
+        ],
+        "bid_boundary": 7594052,
+        "bid_trusted": true,
+        "checkpoints_compared": 172,
+        "duplicates": 862660,
+        "event": 1725439,
+        "full_observed_depth_equal": true,
+        "gaps": [
+          [
+            99917062237,
+            99917109025
+          ]
+        ],
+        "invalid_intervals": [
+          [
+            99917061706,
+            99917111948
+          ],
+          [
+            99940147247,
+            99940242273
+          ],
+          [
+            99940249261,
+            99940252888
+          ],
+          [
+            99940254079,
+            99940256090
+          ],
+          [
+            99940257198,
+            99940257784
+          ]
+        ],
+        "kind": "summary",
+        "last_depth_update_id": 99969028222,
+        "last_update_id": 99969028222,
+        "outer_unseen_removals": 156328,
+        "segments": 100,
+        "sequence_gaps": 1,
+        "spread_ticks": 1,
+        "stale": 0,
+        "status": "applied",
+        "structural_errors": [],
+        "trusted_intervals": [
+          [
+            99917111949,
+            99940147246
+          ],
+          [
+            99940242274,
+            99940249260
+          ],
+          [
+            99940252889,
+            99940254078
+          ],
+          [
+            99940256091,
+            99940257197
+          ],
+          [
+            99940257785,
+            99969028222
+          ]
+        ],
+        "unanchored": 20,
+        "unseen_removals": 2144644
+      },
+      "dataset_id": "c7e896498cfdd3a8edc8f57fc8cab883ac3461735d4f5d0fa03e557a35e21a6a",
+      "date_utc": "2026-09-10",
+      "event_bytes": 816266785,
+      "partition": "development",
+      "reused_without_reconstruction": true,
+      "source_manifest_sha256": [
+        "3a45ea80381441412c29858aeb3dc86e3b16130be3c0220fb9252620895c465d",
+        "dd1a8c2aa25242ef8aaa7bc969da1b185c3c15e775def4ff067fbc39beeb6eae"
+      ],
+      "summary": {
+        "applied": 862759,
+        "ask_boundary": 7760424,
+        "ask_trusted": true,
+        "best_ask": [
+          7656873,
+          14517
+        ],
+        "best_bid": [
+          7656872,
+          473474
+        ],
+        "bid_boundary": 7594052,
+        "bid_trusted": true,
+        "duplicates": 862660,
+        "event": 1725439,
+        "gaps": [
+          [
+            99917062237,
+            99917109025
+          ]
+        ],
+        "invalid_intervals": [
+          [
+            99917061706,
+            99917111948
+          ],
+          [
+            99940147247,
+            99940242273
+          ],
+          [
+            99940249261,
+            99940252888
+          ],
+          [
+            99940254079,
+            99940256090
+          ],
+          [
+            99940257198,
+            99940257784
+          ]
+        ],
+        "kind": "summary",
+        "last_depth_update_id": 99969028222,
+        "last_update_id": 99969028222,
+        "outer_unseen_removals": 156328,
+        "segments": 100,
+        "sequence_gaps": 1,
+        "spread_ticks": 1,
+        "stale": 0,
+        "status": "applied",
+        "structural_errors": [],
+        "trusted_intervals": [
+          [
+            99917111949,
+            99940147246
+          ],
+          [
+            99940242274,
+            99940249260
+          ],
+          [
+            99940252889,
+            99940254078
+          ],
+          [
+            99940256091,
+            99940257197
+          ],
+          [
+            99940257785,
+            99969028222
+          ]
+        ],
+        "unanchored": 20,
+        "unseen_removals": 2144644
+      },
+      "trusted_ratio": 0.9970847189931933,
+      "verification_status": "pass"
+    },
+    {
+      "artifact_sha256": {
+        "replay/events.l2": "f40223b6c7df8d0c91ed2460f42e6a3a96b71de2bba5437747b9822eb1c760f3",
+        "replay/evidence.json": "24e9b1660f6e26031cf27fce1c94a7bff907c90adece869470989f18bfa327ac",
+        "replay/expected.ndjson": "8c808adb12198790cf7f13391f2f030ed14eec904ebda7faec7c76cfe0614e0b",
+        "verification/verification-2026-09-14-btcusdt.json": "e1e71f5340b30e2206233f4de10e5c9801dfcf7aa86c4e587d6eccd3ff267767"
+      },
+      "cpp_comparison": {
+        "applied": 862298,
+        "ask_boundary": 7916887,
+        "ask_trusted": true,
+        "best_ask": [
+          7818921,
+          251657
+        ],
+        "best_bid": [
+          7818920,
+          67886
+        ],
+        "bid_boundary": 7747142,
+        "bid_trusted": true,
+        "checkpoints_compared": 172,
+        "duplicates": 863555,
+        "event": 1727164,
+        "full_observed_depth_equal": true,
+        "gaps": [],
+        "invalid_intervals": [
+          [
+            100071518696,
+            100071596660
+          ]
+        ],
+        "kind": "summary",
+        "last_depth_update_id": 100126273281,
+        "last_update_id": 100126273281,
+        "outer_unseen_removals": 167056,
+        "segments": 101,
+        "sequence_gaps": 0,
+        "spread_ticks": 1,
+        "stale": 0,
+        "status": "applied",
+        "structural_errors": [],
+        "trusted_intervals": [
+          [
+            100071596661,
+            100126273281
+          ]
+        ],
+        "unanchored": 1311,
+        "unseen_removals": 2035961
+      },
+      "dataset_id": "48452ef954aed07ef0439a9d544079a5caa991ee9432d9eaa661f85f5068ba26",
+      "date_utc": "2026-09-14",
+      "event_bytes": 894863794,
+      "partition": "development",
+      "reused_without_reconstruction": true,
+      "source_manifest_sha256": [
+        "4394138ee033b1405ee84a9beeef92cef46b1f7b0ccb8d2b3ccb897cb86b575e",
+        "a1bcf55ecda546c83e7f5e1687d4ac0a1f3c0749b828a3eb4eda306a0a070abe"
+      ],
+      "summary": {
+        "applied": 862298,
+        "ask_boundary": 7916887,
+        "ask_trusted": true,
+        "best_ask": [
+          7818921,
+          251657
+        ],
+        "best_bid": [
+          7818920,
+          67886
+        ],
+        "bid_boundary": 7747142,
+        "bid_trusted": true,
+        "duplicates": 863555,
+        "event": 1727164,
+        "gaps": [],
+        "invalid_intervals": [
+          [
+            100071518696,
+            100071596660
+          ]
+        ],
+        "kind": "summary",
+        "last_depth_update_id": 100126273281,
+        "last_update_id": 100126273281,
+        "outer_unseen_removals": 167056,
+        "segments": 101,
+        "sequence_gaps": 0,
+        "spread_ticks": 1,
+        "stale": 0,
+        "status": "applied",
+        "structural_errors": [],
+        "trusted_intervals": [
+          [
+            100071596661,
+            100126273281
+          ]
+        ],
+        "unanchored": 1311,
+        "unseen_removals": 2035961
+      },
+      "trusted_ratio": 0.9985761010045807,
+      "verification_status": "pass"
+    }
+  ],
+  "scope": "WP1 policy, metadata inventory, local preparation/reuse and reconstruction checks",
+  "tests": {
+    "ci": "updated, not run remotely in this task",
+    "combined_branch_aware_coverage_percent": 84.37,
+    "debug_ctest": "3/3 passed; policy/dataset/differential target includes 40 pytest cases",
+    "live_tests_deselected": 2,
+    "mypy": "passed",
+    "offline_python_passed": 101,
+    "ruff": "passed"
+  },
+  "validation_date": "2026-11-07"
+}

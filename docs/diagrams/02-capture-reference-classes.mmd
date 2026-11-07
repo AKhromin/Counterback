@@ -1,0 +1,56 @@
+classDiagram
+    direction LR
+    class RecorderService {
+        +run()
+        +request_stop()
+    }
+    class RecorderConfig
+    class SequenceTracker {
+        +observe(symbol, first, final)
+        +last_update_id(symbol)
+    }
+    class Gap
+    class StorageManager {
+        +append(record)
+        +write_http_payload()
+        +finalize_day()
+    }
+    class HourlyWriter {
+        +append(record)
+        +finalize()
+    }
+    class WriteRecord
+    class VerifierFunctions {
+        <<module>>
+        +verify_manifest()
+        +merge_sorted()
+        +deduplicate_depth()
+        +reconstruct()
+        +verify_day()
+    }
+    class HorizonBook {
+        +apply(event)
+        +best_bid
+        +best_ask
+        +top_trusted
+        +matches_ticker(ticker)
+    }
+    class ReferenceReplay {
+        +apply(event)
+        +checkpoint()
+    }
+    class Instrument {
+        +symbol
+        +tick_size
+        +lot_size
+        +levels(decimal_levels)
+    }
+    RecorderService --> RecorderConfig
+    RecorderService *-- SequenceTracker
+    SequenceTracker ..> Gap
+    RecorderService *-- StorageManager
+    StorageManager *-- HourlyWriter
+    HourlyWriter ..> WriteRecord
+    VerifierFunctions ..> HorizonBook : correctness reference
+    ReferenceReplay *-- "0..1" HorizonBook
+    ReferenceReplay --> Instrument

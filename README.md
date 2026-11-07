@@ -43,6 +43,14 @@ It is not a trading system, it will never connect to a broker, and it is not a n
 
 ## Design
 
+See the [high-level system design and class diagrams](docs/system-design.md) for
+the complete architecture, current implementation boundaries and proposed modules.
+The [v1 completion plan](docs/v1-completion-plan.md) records what is done, in
+progress and outstanding, with an ordered delivery plan and acceptance gates.
+WP1 provides a [frozen simulation contract](docs/v1-execution-contract.md) and
+[dataset inventory/preparation tooling](docs/dataset-preparation.md). See
+[WP1 validation](docs/wp1-validation.md) for measured data scope and checks.
+
 - **Language split.** Python API for strategies, configuration, experiments and analysis; a C++ core, exposed through pybind11, for the matching engine, the event loop and anything called once per market message.
 - **Strategy interface.** A strategy is a plain Python class implementing `on_event(book, trades, clock, portfolio) -> orders`. Market, limit and cancel orders in v1.
 - **Fill models**, from crude to faithful: mid-price plus half the spread; a cap on participation in traded volume; full queue-position simulation against the reconstructed book. Comparing results across the three is itself one of the experiments.
