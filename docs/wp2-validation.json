@@ -1,0 +1,193 @@
+{
+  "availability": "merged-receive-prefix-bridge-1",
+  "base_commit": "1f6a150",
+  "changes": "local uncommitted WP2 implementation",
+  "contract": "counterback-v1-contract-1",
+  "date_utc": "2026-11-07",
+  "final_binary_check": {
+    "all_outputs_equal": true,
+    "binary_sha256": "8895479ea1008048c71623b6cbd10d9ed5c4ff5ddb5b36698ec656812fc500f5"
+  },
+  "kind": "counterback.wp2-validation",
+  "runs": [
+    {
+      "checkpoints_equal": 138,
+      "dataset_id": "48452ef954aed07ef0439a9d544079a5caa991ee9432d9eaa661f85f5068ba26",
+      "date_utc": "2026-09-14",
+      "full_reference_summary_equal": true,
+      "input_sha256": "f40223b6c7df8d0c91ed2460f42e6a3a96b71de2bba5437747b9822eb1c760f3",
+      "output_bytes": 20189670,
+      "output_sha256": "61594dafd5e5db16cb524610f6abf47c6906ae590cc3cf35289bde0e055c50c1",
+      "reconstruction": {
+        "applied": 862298,
+        "ask_boundary": 7916887,
+        "ask_trusted": true,
+        "best_ask": [
+          7818921,
+          251657
+        ],
+        "best_bid": [
+          7818920,
+          67886
+        ],
+        "bid_boundary": 7747142,
+        "bid_trusted": true,
+        "duplicates": 863555,
+        "event": 1727164,
+        "gaps": [],
+        "invalid_intervals": [
+          [
+            100071518696,
+            100071596660
+          ]
+        ],
+        "kind": "summary",
+        "last_depth_update_id": 100126273281,
+        "last_update_id": 100126273281,
+        "outer_unseen_removals": 167056,
+        "segments": 101,
+        "sequence_gaps": 0,
+        "spread_ticks": 1,
+        "stale": 0,
+        "status": "applied",
+        "structural_errors": [],
+        "trusted_intervals": [
+          [
+            100071596661,
+            100126273281
+          ]
+        ],
+        "unanchored": 1311,
+        "unseen_removals": 2035961
+      },
+      "reconstruction_depth_counts": {
+        "asks": 5055,
+        "bids": 5145
+      },
+      "repeat_identical": true,
+      "return_code": 0,
+      "runtime": {
+        "applied_updates": 862298,
+        "dispatched": 1725909,
+        "ever_ready": true,
+        "halted": false,
+        "kind": "runtime_summary",
+        "pending_events": 0,
+        "reason": "end",
+        "schema_version": 1,
+        "stopped_at_ns": 1789430400000000000,
+        "strategy_callbacks": 862298
+      },
+      "two_run_elapsed_seconds": 113.645
+    },
+    {
+      "checkpoints_equal": 91,
+      "dataset_id": "c7e896498cfdd3a8edc8f57fc8cab883ac3461735d4f5d0fa03e557a35e21a6a",
+      "date_utc": "2026-09-10",
+      "full_reference_summary_equal": false,
+      "input_sha256": "1dbd86caca937cbf1f3f9c329bc0a01b0bbfcaf602ef31059e16174d3dc77365",
+      "output_bytes": 12662298,
+      "output_sha256": "ec38a76efcbef5d6ae9ccd406faad38ca26d24605fa0636d75476b8b2c9213dd",
+      "reconstruction": {
+        "applied": 459048,
+        "ask_boundary": 7850800,
+        "ask_trusted": true,
+        "best_ask": [
+          7683269,
+          11637
+        ],
+        "best_bid": null,
+        "bid_boundary": 7683510,
+        "bid_trusted": false,
+        "duplicates": 458980,
+        "event": 918048,
+        "gaps": [
+          [
+            99917062237,
+            99917109025
+          ]
+        ],
+        "invalid_intervals": [
+          [
+            99917061706,
+            99917111948
+          ],
+          [
+            99940147247,
+            99940148021
+          ]
+        ],
+        "kind": "summary",
+        "last_depth_update_id": 99940148021,
+        "last_update_id": 99940148021,
+        "outer_unseen_removals": 78100,
+        "segments": 53,
+        "sequence_gaps": 1,
+        "spread_ticks": null,
+        "stale": 0,
+        "status": "applied",
+        "structural_errors": [],
+        "trusted_intervals": [
+          [
+            99917111949,
+            99940147246
+          ]
+        ],
+        "unanchored": 20,
+        "unseen_removals": 989390
+      },
+      "reconstruction_depth_counts": {
+        "asks": 9344,
+        "bids": 1971
+      },
+      "repeat_identical": true,
+      "return_code": 2,
+      "runtime": {
+        "applied_updates": 459048,
+        "dispatched": 918116,
+        "ever_ready": true,
+        "halted": true,
+        "kind": "runtime_summary",
+        "pending_events": 1,
+        "reason": "required_market_trust_lost",
+        "schema_version": 1,
+        "stopped_at_ns": 1789044425850352727,
+        "strategy_callbacks": 459047
+      },
+      "two_run_elapsed_seconds": 58.229
+    }
+  ],
+  "schema_version": 1,
+  "source_sha256": {
+    "engine/CMakeLists.txt": "6efd4a16aaf065420541f27e814c7e29fb63b39a167069228bac69238a2c7c27",
+    "engine/examples/runtime-fixture.l2": "63a451deac57ec7ba0742490a187165af1e7072aa51a2c569617202abb42e2e2",
+    "engine/examples/runtime_replay.cpp": "f0e60cde889e3ae1057df004312d4dcc2723b9a073f9367eafc12d989262c3fc",
+    "engine/include/counterback/backtest_engine.hpp": "b0936499cc290163af60b600ca9bed3a1651366de615a653ea75fc93f58c34ca",
+    "engine/include/counterback/historical_book.hpp": "e39d330a46ea9c0bcac2fbd28109f2b6c917f34eb23c98ac631b69c257a18b39",
+    "engine/include/counterback/market_model.hpp": "47b60d8f287d79473c6584af43bf4f3cd9c147ad3b94e7b769db950914ea8357",
+    "engine/include/counterback/matching_engine.hpp": "fc36fb1865ad98c9b68030af89ce153584a49e55abf131cac5540abf4160b7bb",
+    "engine/include/counterback/prepared_replay.hpp": "6801c622a6e891cffd3049dc720dddc538862077ecb2dde75150d152520c2aa7",
+    "engine/include/counterback/replay_engine.hpp": "375bfd618ffb1c64626000ef3975d1ddc04f2c7be801f587b2b6abc573fbf9d4",
+    "engine/include/counterback/types.hpp": "4a08ed1755678cb6d92e9b0a906bb1db7eb52d05253b7f72ae897eab078f2662",
+    "engine/src/backtest_engine.cpp": "9ea3d5a04350c67a9d36f9e029b415a3d5a7fc1d3099fda017c216496476883e",
+    "engine/src/historical_book.cpp": "d0e9b9d9b9404b2d07ce78cef7c6edb6b9fd67a774137ce460f77f1931f2a680",
+    "engine/src/market_model.cpp": "f17e1ce8c8eae4f0ac3bd46909590d20b6be25b6579e390df71c068e5f1c4293",
+    "engine/src/matching_engine.cpp": "804844bb7c270bf8f60f13af3defe7cebac87638f127a0714540195a78bb6c18",
+    "engine/src/prepared_replay.cpp": "5628ff90a78fdb6d99094386401a46769381a156b0aefc50d9f0d5f135ded817",
+    "engine/src/replay_engine.cpp": "9816fdee1addb5dad32e6df272c59a4a8e61473400ca8bfdfd3f25bb5389edb6",
+    "engine/tests/runtime_test.cpp": "f1834a3aff9eba3cda7b26e35b4e3129fe5bcaa6bdb26eedd52ae523c1255dd1",
+    "tests/test_wp2_runtime.py": "e3db8cc7a09de64d2a5f65a0dca45d6f95e62d4a33e2afe47682f78cdd18087b"
+  },
+  "tests": {
+    "asan_ubsan_ctest_passed": 3,
+    "debug_ctest_passed": 4,
+    "live_deselected": 2,
+    "mypy": "pass",
+    "new_wp2_python_cases": 10,
+    "offline_python_passed": 111,
+    "python_coverage_percent": 84.37,
+    "python_reference_target_cases": 50,
+    "release_ctest_passed": 4,
+    "ruff": "pass"
+  }
+}

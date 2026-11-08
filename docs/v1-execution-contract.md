@@ -9,6 +9,11 @@ money rules; they do not implement an event loop, strategy executor or portfolio
 [The reference policy JSON](../config/v1-policy.example.json) is machine-readable.
 It is a policy example, not an already-supported backtest run configuration.
 
+WP2 now implements the [runtime and backend adapters](wp2-runtime.md), with
+[acceptance evidence](wp2-validation.md). The example
+`runtime_implemented: false` field records the WP1 publication state; it does
+not describe the current WP2 implementation or claim complete trading/accounting.
+
 ## Time, sequencing and snapshot availability
 
 1. Preserve the existing verifier merge key `(U, u, rx_utc)` and input-recorder
@@ -36,7 +41,7 @@ It is a policy example, not an already-supported backtest run configuration.
 
 The existing `events.l2` header lists snapshots before depth for reconstruction
 convenience. Loading that header is not permission to reveal every snapshot at
-time zero. WP2 must implement the availability gate above while keeping the
+time zero. WP2 implements the availability gate above while keeping the
 reference reconstruction path intact. Prepared bundles are therefore qualified
 for reconstruction, not certified as completed causal trading simulations.
 

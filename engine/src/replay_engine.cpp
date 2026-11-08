@@ -67,7 +67,7 @@ ReplayEngine::ReplayEngine(std::string symbol, std::vector<DepthSnapshot> snapsh
     }
 }
 
-std::string ReplayEngine::apply(const DepthUpdate& event) {
+ReplayEngine::Plan ReplayEngine::plan(const DepthUpdate& event) const {
     if (event.symbol != symbol_) {
         throw BookDataError("event symbol does not match replay");
     }
@@ -82,13 +82,35 @@ std::string ReplayEngine::apply(const DepthUpdate& event) {
         throw BookDataError("depth stream is not sorted by U, u, rx_utc");
     }
 
-    ++stats_.events;
-    
     if (previous_ && event.first_update_id == previous_->first_update_id &&
         event.final_update_id == previous_->final_update_id) {
         if (event.bids != previous_->bids || event.asks != previous_->asks) {
             throw BookDataError("conflicting duplicate depth event");
         }
+        return {nullptr, snapshot_index_, true};
+    }
+    Plan result{nullptr, snapshot_index_, false};
+    while (result.next_snapshot < snapshots_.size() &&
+           snapshots_[result.next_snapshot].last_update_id < event.final_update_id) {
+        const auto& candidate = snapshots_[result.next_snapshot++];
+        if (event.first_update_id <= candidate.last_update_id + 1 &&
+            candidate.last_update_id + 1 <= event.final_update_id) {
+            result.bridge = &candidate;
+        }
+    }
+    return result;
+}
+
+ReplayEngine::Timing ReplayEngine::timing(const DepthUpdate& event) const {
+    const auto next = plan(event);
+    return {next.duplicate || (!next.bridge && book_ && event.final_update_id <= book_->last_update_id()),
+            next.bridge ? next.bridge->observation.rx_utc_ns : 0};
+}
+
+std::string ReplayEngine::apply(const DepthUpdate& event) {
+    const auto next = plan(event);
+    ++stats_.events;
+    if (next.duplicate) {
         previous_ = event;
         ++stats_.duplicates;
         return status_ = "duplicate";
@@ -104,17 +126,8 @@ std::string ReplayEngine::apply(const DepthUpdate& event) {
     
     stats_.last_depth_update_id = std::max(stats_.last_depth_update_id.value_or(0), event.final_update_id);
     
-    const DepthSnapshot* bridge = nullptr;
-    
-    while (snapshot_index_ < snapshots_.size() &&
-           snapshots_[snapshot_index_].last_update_id < event.final_update_id) {
-        const auto& candidate = snapshots_[snapshot_index_++];
-        
-        if (event.first_update_id <= candidate.last_update_id + 1 &&
-            candidate.last_update_id + 1 <= event.final_update_id) {
-                bridge = &candidate;
-        }
-    }
+    const auto* bridge = next.bridge;
+    snapshot_index_ = next.next_snapshot;
     
     if (bridge) {
         try {

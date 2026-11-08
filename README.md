@@ -2,7 +2,7 @@
 
 **A backtester where the market can answer back.** An execution-realistic backtesting engine, extended to run strategies against order books that react to them.
 
-> **Status: historical L2 replay (21 October 2026).** This repository contains the `depth-recorder` Python package (v0.1.1), a standalone C++17 synthetic order-matching engine, and a separate historical L2 book/replay component with exact integer conversion and Python reference comparisons. See [the replay guide](docs/historical-replay.md) and [validation evidence](docs/historical-replay-validation.md). Strategy bindings, portfolio/cost accounting, reactive markets and reported experiment results remain future work. The target for v1 is 30 November 2026.
+> **Status: WP2 deterministic runtime implemented (7 November 2026).** The repository contains the recorder/verifier, exact historical L2 preparation/replay, synthetic FIFO matching, and a causal C++ runtime with read-only market views, replay/synthetic adapters and stable event journals. See the [WP2 guide](docs/wp2-runtime.md) and [validation evidence](docs/wp2-validation.md). Historical strategy fills and portfolio/fee accounting are WP3; Python strategy bindings and reactive markets remain future work. The v1 target is 30 November 2026.
 
 The recorder and verifier have been exercised locally. At the last documented operational checks (8 September), recorder A had been recording, while recorder B's service, timers, and Google Drive connection had been checked. Current host health, B's first verified real-data upload, seven qualifying full days, recovery, and a restore drill are not confirmed by this checkout. See the [recorder guide](docs/depth-recorder.md) and [production runbook](docs/runbook.md). Raw recordings and verification inputs are excluded from Git.
 
@@ -50,6 +50,7 @@ progress and outstanding, with an ordered delivery plan and acceptance gates.
 WP1 provides a [frozen simulation contract](docs/v1-execution-contract.md) and
 [dataset inventory/preparation tooling](docs/dataset-preparation.md). See
 [WP1 validation](docs/wp1-validation.md) for measured data scope and checks.
+WP2 adds the [deterministic runtime and adapters](docs/wp2-runtime.md).
 
 - **Language split.** Python API for strategies, configuration, experiments and analysis; a C++ core, exposed through pybind11, for the matching engine, the event loop and anything called once per market message.
 - **Strategy interface.** A strategy is a plain Python class implementing `on_event(book, trades, clock, portfolio) -> orders`. Market, limit and cancel orders in v1.
@@ -99,7 +100,7 @@ The current checkout contains:
 
 ```text
 src/depth_recorder/   Binance capture, storage, CLI, book reconstruction, verification
-engine/               C++17 synthetic matching library, example and deterministic tests
+engine/               C++17 matching, historical replay, causal runtime, adapters and tests
 CMakeLists.txt        C++ build and CTest entry point
 tests/                Offline and local-protocol tests; live tests marked separately
 deploy/               systemd units, installation, offload, and verified pruning
@@ -121,7 +122,7 @@ ctest --test-dir build --output-on-failure
 ./build/engine/counterback_demo
 ```
 
-This demo exercises synthetic order matching; a historical backtest cannot be run yet.
+This demo exercises synthetic order matching. Run the [WP2 observation-only runtime example](docs/wp2-runtime.md#run-a-small-example) next. Historical trading/accounting is the next work package.
 
 ## Reproducibility
 

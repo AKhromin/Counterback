@@ -3,8 +3,9 @@
 The first engine slice is a standalone C++17 library for **synthetic individual
 orders**, with a runnable example and offline tests. It has no third-party C++
 dependencies. A separate historical L2 replay library is described in
-[historical replay](historical-replay.md). Python bindings, strategy callbacks,
-fees, portfolio accounting and reactive markets remain future work.
+[historical replay](historical-replay.md). The [WP2 runtime](wp2-runtime.md) adds C++ callbacks, scheduling and backend
+adapters. Python bindings, fees, portfolio accounting and reactive markets remain
+future work.
 
 ## Build and run
 

@@ -12,7 +12,7 @@ endif()
 add_executable(counterback_demo examples/matching_demo.cpp)
 target_link_libraries(counterback_demo PRIVATE counterback::engine)
 
-add_library(counterback_historical src/historical_book.cpp src/replay_engine.cpp)
+add_library(counterback_historical src/historical_book.cpp src/replay_engine.cpp src/prepared_replay.cpp)
 add_library(counterback::historical ALIAS counterback_historical)
 target_include_directories(counterback_historical PUBLIC include)
 target_compile_features(counterback_historical PUBLIC cxx_std_17)
@@ -25,6 +25,20 @@ endif()
 add_executable(counterback_replay examples/historical_replay.cpp)
 target_link_libraries(counterback_replay PRIVATE counterback::historical)
 
+add_library(counterback_runtime src/market_model.cpp src/backtest_engine.cpp)
+add_library(counterback::runtime ALIAS counterback_runtime)
+target_link_libraries(counterback_runtime PUBLIC counterback::historical counterback::engine)
+target_compile_features(counterback_runtime PUBLIC cxx_std_17)
+set_target_properties(counterback_runtime PROPERTIES CXX_EXTENSIONS OFF)
+if(MSVC)
+    target_compile_options(counterback_runtime PRIVATE /W4 /WX)
+else()
+    target_compile_options(counterback_runtime PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+add_executable(counterback_runtime_replay examples/runtime_replay.cpp)
+set_target_properties(counterback_runtime_replay PROPERTIES OUTPUT_NAME counterback_runtime)
+target_link_libraries(counterback_runtime_replay PRIVATE counterback::runtime)
+
 if(BUILD_TESTING)
     add_executable(counterback_engine_tests tests/matching_engine_test.cpp)
     target_link_libraries(counterback_engine_tests PRIVATE counterback::engine)
@@ -32,15 +46,19 @@ if(BUILD_TESTING)
     add_executable(counterback_historical_tests tests/historical_replay_test.cpp)
     target_link_libraries(counterback_historical_tests PRIVATE counterback::historical)
     add_test(NAME historical_replay COMMAND counterback_historical_tests)
+    add_executable(counterback_runtime_tests tests/runtime_test.cpp)
+    target_link_libraries(counterback_runtime_tests PRIVATE counterback::runtime)
+    add_test(NAME deterministic_runtime COMMAND counterback_runtime_tests)
     if(COUNTERBACK_PYTHON_TESTS)
         find_package(Python3 3.11 REQUIRED COMPONENTS Interpreter)
         add_test(NAME historical_python_reference
             COMMAND "${Python3_EXECUTABLE}" -m pytest
                 "${PROJECT_SOURCE_DIR}/tests/test_historical_replay.py"
                 "${PROJECT_SOURCE_DIR}/tests/test_wp1_contract.py"
-                "${PROJECT_SOURCE_DIR}/tests/test_wp1_dataset.py" -q)
+                "${PROJECT_SOURCE_DIR}/tests/test_wp1_dataset.py"
+                "${PROJECT_SOURCE_DIR}/tests/test_wp2_runtime.py" -q)
         set_tests_properties(historical_python_reference PROPERTIES
             WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
-            ENVIRONMENT "COUNTERBACK_REPLAY_BINARY=$<TARGET_FILE:counterback_replay>")
+            ENVIRONMENT "COUNTERBACK_REPLAY_BINARY=$<TARGET_FILE:counterback_replay>;COUNTERBACK_RUNTIME_BINARY=$<TARGET_FILE:counterback_runtime_replay>")
     endif()
 endif()

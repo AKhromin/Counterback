@@ -19,7 +19,9 @@ uses both releases and follows them; it is not another engine release.
 WP1's baseline rules are frozen in the [v1 simulation contract](v1-execution-contract.md).
 The [dataset preparation guide](dataset-preparation.md) describes the implemented
 inventory/cache tooling; [WP1 validation](wp1-validation.md) records its measured
-scope. Policy primitives and prepared data do not imply a completed backtest runtime.
+scope. [WP2 runtime and adapters](wp2-runtime.md) now implement causal scheduling,
+immutable market views and initial journals. Historical execution/accounting and
+Python bindings remain later work.
 
 The [class and data-type catalogue](#10-class-and-data-type-catalogue) describes
 every class in the diagrams, the additional records named in this design, and
@@ -59,8 +61,8 @@ additional modules. Binance is an external input, not a module in the table.
 Solid arrows show the main data/control relationships. Dashed arrows show
 selected cross-cutting support relationships, not market-event messages. The
 detailed event sequence is in section 6; the class-level decomposition is in
-sections 4, 5 and 10. The offline path is implemented; the trading runtime and
-research/reporting layers remain proposed.
+sections 4, 5 and 10. The offline path and WP2 scheduling/backend foundation are implemented;
+trading execution/accounting and research/reporting remain proposed.
 
 ```mermaid
 flowchart TB
@@ -75,8 +77,8 @@ flowchart TB
     subgraph runtime[Simulation and strategy integration]
         m05["M05 Historical market state<br/>E - v1 baseline, reused by v2"]
         m06["M06 Synthetic matching<br/>E - v1 foundation, reusable by v2"]
-        m07["M07 Simulation scheduling<br/>P - v1 core, reused by v2"]
-        m08["M08 Market backends<br/>P - v1 replay/synthetic, v2 reactive"]
+        m07["M07 Simulation scheduling<br/>E/P - WP2 core, managed actions later"]
+        m08["M08 Market backends<br/>E/P - replay/synthetic built, reactive later"]
         m09["M09 Orders and execution<br/>P - v1 core, optional v2 refinements"]
         m10["M10 Accounting and costs<br/>P - v1 accounting, v2 impact"]
         m11["M11 Strategy API<br/>P - v1 API, reused by v2 strategies"]
@@ -140,7 +142,7 @@ orders and execution (M09) includes both order management and fill policies;
 evaluation and reports (M14) includes both analyzers and report generation.
 
 `MatchingEngine` (M06) remains independent of historical replay (M05). The
-proposed M08 adapters integrate them under a common contract without translating
+WP2 M08 adapters integrate them under a common contract without translating
 Binance L2 deltas into matcher orders. An execution model may delegate to its
 selected backend, but must not execute the same order in both a historical fill
 approximation and the FIFO matcher. The M08–M12–M07 response path is used only by
@@ -157,18 +159,18 @@ classes/files; use the diagram to see how that module interacts with others.
 | **M01 — Capture** | Public WebSocket/REST, receive timestamps, reconnects, gap observations, periodic snapshots and exchangeInfo | **v1 foundation**, reused by v2 | E: `src/depth_recorder/recorder.py`, `config.py`, `sequence.py` |
 | **M02 — Raw storage** | WAL recovery, hourly zstd files, ledgers, final manifests and checksums | **v1 foundation**, reused by v2 | E: `src/depth_recorder/storage.py`, `jsonutil.py`, `models.py` |
 | **M03 — Verification** | Merge recorder streams, detect conflicting duplicates, reconstruct, check tickers and coverage | **v1 foundation**, reused by v2 | E: functions in `verify.py`; `HorizonBook` in `book.py` |
-| **M04 — Integer ingest** | Metadata validation, exact ticks/lots, deterministic export, inventory, preparation cache and reference comparison | **v1 foundation**, reused by v2; additional feed/generator adapters are extensions | E: `src/counterback_replay/export.py`, `dataset.py`; C++ file reader in `engine/examples/historical_replay.cpp` |
+| **M04 — Integer ingest** | Metadata validation, exact ticks/lots, deterministic export, inventory, preparation cache and reference comparison | **v1 foundation**, reused by v2; additional feed/generator adapters are extensions | E: `src/counterback_replay/export.py`, `dataset.py`; C++ `PreparedReplayReader` in `engine/src/prepared_replay.cpp` |
 | **M05 — Historical market state** | Bootstrap, absolute L2 replacement, gaps, trust/horizon and crossed-book checks | **v1** replay state; retained as the v2 comparison baseline | E: `HistoricalBook`, `ReplayEngine`, `ReplayStatistics` |
 | **M06 — Synthetic matching** | Individual order IDs, FIFO queues, limit/market orders, cancellation and fills | **v1 foundation**; reusable in compatible v2 order-level markets | E: `MatchingEngine` and structs in `types.hpp` |
-| **M07 — Simulation scheduling** | One causal event queue, simulated clock, event priorities, delayed actions and deterministic dispatch | **v1 core**, reused by v2 to schedule responses | P: `BacktestEngine`, `EventQueue`, `SimulationClock` |
-| **M08 — Market backends** | Replay, synthetic order-level world and mechanistic reactive world behind one interface | **v1:** common interface, replay and synthetic adapters. **v2:** reactive backend | P: `MarketModel`, `ReplayMarket`, `SyntheticMarket`, `ReactiveMarket` |
+| **M07 — Simulation scheduling** | One causal event queue, simulated clock, event priorities, delayed actions and deterministic dispatch | **v1 core**, reused by v2 to schedule responses | E: `BacktestEngine`, `EventQueue`, `SimulationClock`; managed order/account notifications remain WP4 |
+| **M08 — Market backends** | Replay, synthetic order-level world and mechanistic reactive world behind one interface | **v1:** common interface, replay and synthetic adapters. **v2:** reactive backend | E: `MarketModel`, `ReplayMarket`, `SyntheticMarket`, `MarketView`; P: `ReactiveMarket` |
 | **M09 — Orders and execution** | Strategy order lifecycle, rejects, cancellations, latency, fill assumptions, consumed liquidity | **v1:** working execution, slippage, lifecycle and latency contract. **v2 optional refinements:** participation/queue estimators requiring additional data | P: `OrderManager`, `LatencyModel`, `ExecutionModel`, `LiquidityBudget` |
 | **M10 — Accounting and costs** | Fill-driven cash/inventory, fees, optional impact charges, valuation and attribution | **v1:** portfolio, fees, valuation and execution/slippage attribution. **v2:** explicit calibrated impact models | P: `Portfolio`, `FeeModel`, `ImpactCostModel`, `ValuationPolicy`, `FillRecord` |
 | **M11 — Strategy API** | Read-only book/trades/clock/portfolio; return market/limit/cancel requests | **v1:** Python API/bindings and intraday mean reversion. **v2:** monthly momentum control using the same API | P: Python `Strategy`, C++ `StrategyBridge`, pybind11 module |
 | **M12 — Reactive model adapters** | Apply a declared response law; optionally consume validated learned background flow | **v2:** mechanistic response. **Optional v2/later:** learned scenario adapter; not a v1 gate | P: `ResponseModel`, `GeneratorAdapter`; no current DiffLOB integration |
 | **M13 — Experiments** | Size/seed/day/model sweeps and paired replay/reactive runs | **v1:** baseline run/configuration harness. **v2:** paired reactive scenarios. **After v2:** full research sweeps | P: `ExperimentRunner`, `Scenario`, `RunConfig`, `RunResult` |
 | **M14 — Evaluation and reports** | Equity/drawdown, costs/fills, Sharpe/Deflated Sharpe inputs, divergence, confidence intervals, realism scorecard | **v1:** trading diagnostics and results write-up. **v2:** response/realism diagnostics. **After v2:** final divergence statistics and scorecard | P: `MetricsCalculator`, `DivergenceAnalyzer`, `RealismSuite`, `ReportBuilder` |
-| **M15 — Reproducibility** | Config, source hashes, code/environment/model versions, seeds, event/fill/accounting logs | **v1 core**, extended in v2 with response/model identities and reused for the final study | E: capture/export evidence; P: complete `RunManifest`, `EventJournal` |
+| **M15 — Reproducibility** | Config, source hashes, code/environment/model versions, seeds, event/fill/accounting logs | **v1 core**, extended in v2 with response/model identities and reused for the final study | E: capture/export evidence, initial runtime journal records/sink; P: complete `RunManifest`, `EventJournal` |
 | **M16 — Operations and validation** | systemd, offload/restore/pruning, health checks, offline tests, reference comparisons | **v1:** recorder/engine/accounting validation. **v2:** reactive-model and round-trip validation | E: `deploy/`, `.github/workflows/ci.yml`, CTest/Python suites; P: backtest/accounting/response validation |
 | **M17 — Performance profiling** | Benchmark fixed workloads and identify time/memory costs in the C++ event loop, matching and replay paths | **v2**, as specified in the README roadmap | P: profiling/benchmark harness and recorded configurations; no dedicated implementation claimed |
 
@@ -331,9 +333,11 @@ the simulator actually has individual order-level events.
 
 ## 5. Proposed backtesting class structure
 
-The following classes do not exist yet. The architecture uses composition and
-small replaceable policies rather than one large engine owning every model's
-implementation. Methods indicate responsibilities, not finalized signatures.
+The diagram shows the target composition. WP2 implements `BacktestEngine`,
+`EventQueue`, `SimulationClock`, `MarketModel`, `ReplayMarket` and `SyntheticMarket`.
+Order/account management, Python bridges and reactive models remain proposed.
+Methods on those proposed components indicate responsibilities, not finalized
+signatures; see [the runtime guide](wp2-runtime.md) for current APIs.
 
 ```mermaid
 classDiagram
@@ -506,7 +510,7 @@ The local LOBSTER/equity smoke work does not establish a BTCUSDT generator.
 | Contract | Purpose |
 | --- | --- |
 | `MarketEvent` / `EventEnvelope` (P) | Tagged snapshot, depth, public trade or generated event; provenance, exchange sequence, simulation/availability times and validity. Wrap existing L2 records instead of changing their meaning. |
-| `MarketView` (P) | Read-only observed depth, trusted horizons, sequence/time and instrument metadata; never expose future or private mutable state. |
+| `MarketView` (E) | Read-only observed depth, trusted horizons, sequence/time and instrument metadata; never expose future or private mutable state. |
 | `OrderRequest` (P) | Strategy market/limit/cancel instruction; distinct from `DepthUpdate`. The manager owns IDs and lifecycle state. |
 | `StrategyAction` (P) | Accepted posting/cancellation or execution committed by the simulator; the declared response model decides which action kinds affect the market. |
 | `FillRecord` / `ExecutionOutcome` (P) | Stable fill IDs, execution time, price/quantity, liquidity role, status and model provenance; normalize current matching reports and future L2 estimates. |
@@ -563,7 +567,7 @@ Required runtime rules:
    within a round. Same-time child work moves to a later round when its priority
    would otherwise place it before its parent. Within one action, commit fills
    before its reactive response. Never let Python callback duration or GPU wall
-   time reorder simulated events. WP2 still must implement the runtime queue.
+   time reorder simulated events. WP2 implements this queue and tests its ordering.
 2. **Separate time meanings.** Keep exchange event time, recorder receive time,
    strategy visibility time, order arrival time and notification time distinct.
    The current replay is sorted by update IDs, not a trading latency clock.
@@ -588,8 +592,8 @@ Required runtime rules:
 
 The [WP1 contract](v1-execution-contract.md) now defines baseline availability,
 delayed notification, L2 replenishment, taker-like/crossing-only execution,
-fee rounding, valuation and trust-loss behavior. Runtime implementation remains
-WP2–WP6 work. Optional queue-estimation refinements and response-law calibration
+fee rounding, valuation and trust-loss behavior. WP2 implements the scheduling/backend foundation; order execution, account
+visibility and multi-day integration remain WP3–WP6 work. Optional queue-estimation refinements and response-law calibration
 remain separate later decisions.
 
 ## 7. Experiment and reporting structure
@@ -798,8 +802,8 @@ specify contracts; they do not implement the proposed trading runtime.
 | `Instrument` | **v1 foundation**; reused by v2 | Immutable instrument grid used at the decimal-to-integer boundary. Ensures prices and quantities can be represented exactly in ticks/lots. | Stores symbol, tick size and lot size. `levels()` invokes exact integer conversion with grid/bounds checks. The exporter derives it from validated captured exchangeInfo; it does not contain a trading strategy or fee model. |
 | `ReferenceReplay` | **v1 foundation**; reused by v2 | Python oracle for the C++ replay export. Mirrors the verifier's snapshot scheduling while delegating actual book semantics to `HorizonBook`. | Holds the instrument, snapshot list/cursor, optional book, previous event and aggregate counters/intervals. `apply()` advances reference state; `checkpoint()` produces comparable output. It is not the proposed `BacktestEngine`. |
 | `SimulationPolicy` | **v1 foundation**; v2 semantics need explicit versioning | Immutable WP1 baseline policy, separating semantic identifiers from configurable fee/latency/precision/warmup inputs. It explicitly reports that the trading runtime is not yet implemented. | Validates supported policy names, numeric bounds and benchmark fee rate; `to_dict()` exposes assumptions and event priorities. Consumed by policy examples/tests and future runtime configuration, not by the current C++ matching engine. |
-| `ScheduleKey` | **v1 foundation**; reused by v2 | Immutable ordered key defining deterministic event time, causal round, priority and insertion order. It prevents zero-latency child actions from appearing before their triggering event. | Validates unsigned time/round/sequence and an `EventPriority`. `schedule_key()` creates keys relative to a current event. The actual `EventQueue` remains proposed WP2 work. |
-| `EventPriority` | **v1 foundation**; reused by v2 | Existing Python enum defining WP1's market/arrival/cancel/notification/strategy/valuation/end ordering. It is a policy enum, not a service class. | Used by `ScheduleKey`, the policy serializer and causal tests; WP2 must implement dispatch consistent with these priorities and causal rounds. |
+| `ScheduleKey` | **v1 foundation**; reused by v2 | Immutable ordered key defining deterministic event time, causal round, priority and insertion order. It prevents zero-latency child actions from appearing before their triggering event. | Validates unsigned time/round/sequence and an `EventPriority`. `schedule_key()` creates keys relative to a current event. WP2 implements the same key and causal helpers in C++, enforced by `EventQueue`. |
+| `EventPriority` | **v1 foundation**; reused by v2 | Existing Python enum defining WP1's market/arrival/cancel/notification/strategy/valuation/end ordering. It is a policy enum, not a service class. | Used by `ScheduleKey`, the policy serializer and causal tests; WP2 C++ dispatch implements these priorities and causal rounds, with differential checks against the Python keys. |
 
 ### 10.3 Historical replay — existing C++ classes and structs (E)
 
@@ -839,26 +843,26 @@ container aliases. The current matcher status enum describes filled/resting/
 expired submission results; the proposed manager must define its additional
 pending, rejected and cancelled lifecycle states explicitly.
 
-### 10.5 Simulation coordination and strategy integration — proposed classes (P)
+### 10.5 Simulation coordination and strategy integration — existing and proposed
 
 | Class / interface | Version / release scope | Description and responsibility | State, operations and collaborators |
 | --- | --- | --- | --- |
-| `BacktestEngine` | **v1 core**; reused by v2 | Coordinates one configured simulation run. Dispatches events and ensures market changes, strategy calls, order arrivals, fills, accounting and notifications occur in one causal order. | Owns run-level queue/clock/order/accounting/journal state and receives configured policies. `run()` returns a `RunResult`; `dispatch()` routes one event. Delegates market and fill rules rather than implementing every model itself. |
-| `EventQueue` | **v1 core**; v2 also schedules response events | Schedules market events and simulated actions in a stable total order. Ensures an intervening market event is processed before an order whose arrival is later. | Holds pending `EventEnvelope` values ordered by simulation time, causal round, event priority and insertion sequence. `push()` schedules work; `pop_next()` selects the next event. Used by `BacktestEngine`, including for latency and response events. |
-| `SimulationClock` | **v1 core**; reused by v2 | Represents simulated time independently of real execution speed or wall-clock sleeps. | Holds the current logical time and advances monotonically to the next queued event. Read by strategies, order/execution models and response policies; only the coordinator should control advancement. |
+| `BacktestEngine` (E/P) | **v1 core**; reused by v2 | WP2 coordinates a single-use causal market run, C++ callbacks, readiness and trust-loss halts. Historical fills/accounting remain WP3. | Owns queue/clock and an optional journal sink; references one backend. `run()` returns `RuntimeResult`; `schedule()` adds timers; synthetic-only `submit_after()` / `cancel_after()` exercise arrival timing. Order/account management remains proposed. |
+| `EventQueue` (E) | **v1 core**; v2 also schedules response events | Schedules market events and simulated actions in a stable total order. Ensures an intervening market event is processed before an order whose arrival is later. | Holds pending `EventEnvelope` values ordered by simulation time, causal round, event priority and insertion sequence. `push()` schedules work; `pop_next()` selects the next event. Used by `BacktestEngine`, including for latency and response events. |
+| `SimulationClock` (E) | **v1 core**; reused by v2 | Represents simulated time independently of real execution speed or wall-clock sleeps. | Holds the current logical time and advances monotonically to the next queued event. Read by strategies, order/execution models and response policies; only the coordinator should control advancement. |
 | `StrategyBridge` | **v1**; reused by v2 strategies | Adapts the C++ runtime to the Python strategy interface through the proposed pybind11 boundary. | Holds a strategy reference and performs explicit conversion/lifetime management for read-only views and returned requests. `on_event()` passes only information visible at that simulation time and validates returned request types. |
 | `Strategy` | **v1** API/mean reversion; **v2** momentum control uses it | Python user-facing algorithm interface. Observes permitted state and returns trading intent; it does not execute orders or directly mutate the book or portfolio. | Candidate method is `on_event(book, trades, clock, portfolio) -> orders`. Concrete strategies may own indicators/history and deterministic strategy-local state. Each run receives a fresh instance to prevent state leakage between experiments. |
 | `OrderManager` | **v1 core**; reused by v2 | Owns the full simulated order lifecycle and stable ID mapping across requests, acceptance, partial fills, cancellation, rejection and expiry. | Holds outstanding orders, remaining quantities and pending actions. Validates/records `OrderRequest`, schedules arrival through `LatencyModel`, and reconciles `ExecutionOutcome`. Must distinguish authoritative exchange state from delayed strategy notifications. |
 | `LatencyModel` | **v1** latency contract; reused by v2 | Determines when submitted actions reach the simulated market and when outcomes become visible to the strategy. | Holds configured delay parameters and, if stochastic, a dedicated seeded RNG stream. Computes arrival/notification times; `EventQueue` enforces them. It must not use actual callback or inference duration as simulated delay. |
 | `EventJournal` | **v1 core**; v2 adds response/model evidence | Produces an ordered audit trail sufficient to diagnose and reproduce a backtest's state transitions. | Appends versioned market/order/fill/fee/valuation/validity events with stable IDs and logical times, then finalizes artifact references/hashes. Receives committed events from the coordinator; it does not independently change simulation state. |
 
-### 10.6 Market backends and reaction models — proposed classes (P)
+### 10.6 Market backends and reaction models — existing and proposed
 
 | Class / interface | Version / release scope | Description and responsibility | State, operations and collaborators |
 | --- | --- | --- | --- |
-| `MarketModel` | **v1** common interface; extended for **v2** reaction | Common interface through which the runtime advances a market, obtains a read-only view and reports committed strategy actions. Keeps the coordinator independent of the chosen world model. | Candidate operations are `advance(event)`, `view()` and `on_strategy_action(action)`. Each implementation declares feed/execution capabilities and maintains its own state; one backend is selected per run. |
-| `ReplayMarket` | **v1**; retained as the v2 baseline | Adapts the existing `ReplayEngine`/`HistoricalBook` into the proposed trading runtime while keeping recorded market evolution exogenous. | Owns or references replay state and maps it into `MarketView`, including trust/horizon metadata. Strategy actions never rewrite its historical path; simulated consumed liquidity is handled under the execution/budget policy. |
-| `SyntheticMarket` | **v1** order-level adapter; reusable by compatible v2 backends | Presents an individual-order market using the existing FIFO `MatchingEngine`. Supports tests/scenarios where genuine order-level background events are known. | Owns a matcher and accepts appropriately typed order/cancel events. `MatchingExecution` delegates submissions to it. It does not manufacture individual order IDs from aggregate Binance quantities. |
+| `MarketModel` (E) | **v1** common interface; extended for **v2** reaction | WP2 interface separating pending input lookahead from publishing a currently available read-only book. Keeps the coordinator independent of replay versus synthetic matching. | `next_event()`, `advance(event, now)`, `view()`, `capabilities()`; order-level `submit()` / `cancel()` are supported only by `SyntheticMarket`. Committed reactive actions remain v2. |
+| `ReplayMarket` (E) | **v1**; retained as the v2 baseline | Adapts the existing `ReplayEngine`/`HistoricalBook` into the WP2 runtime while keeping recorded market evolution exogenous. | Owns or references replay state and maps it into `MarketView`, including trust/horizon metadata. Strategy actions never rewrite its historical path; simulated consumed liquidity is handled under the execution/budget policy. |
+| `SyntheticMarket` (E) | **v1** order-level adapter; reusable by compatible v2 backends | Presents an individual-order market using the existing FIFO `MatchingEngine`. Supports tests/scenarios where genuine order-level background events are known. | Owns a matcher and accepts appropriately typed order/cancel events. WP2 dispatches scheduled synthetic submissions/cancels to it; the proposed `MatchingExecution` can later delegate to the same adapter. It does not manufacture individual order IDs from aggregate Binance quantities. |
 | `ReactiveMarket` | **v2** | Maintains a market whose subsequent state can change in response to committed strategy actions under a declared model. | Owns market state, a `ResponseModel` and any pending response events. Accepts only model-supported action kinds and schedules resulting changes through the common event order. May use an order-level backend only with compatible background events. |
 | `ResponseModel` | **v2** | Interface describing the market's modeled response to an accepted action and elapsed time. Separates endogenous state evolution from execution-price approximations and cash charges. | Candidate `respond(state, action, elapsed, rng)` returns declared response events. It may be stateful, but its supported action kinds, calibration and RNG behavior must be explicit. Used by `ReactiveMarket`. |
 | `MechanisticResponse` | **v2** | First concrete reactive policy, using a specified and testable response law rather than a learned generator. | Holds configured response/decay parameters and any impact history required by the chosen law. Can initially react to executed flow only; richer posting/cancellation responses require explicit support and validation. |
@@ -904,7 +908,7 @@ be finalized; they are descriptions of required information, not new live APIs.
 | `MarketEvent` | **v1** snapshot/depth contract; v2 can add supported event kinds | Typed market-data payload consumed by the selected backend. Can wrap the existing snapshot/depth structs or a separately supported trade/generated event. | Identifies instrument and event kind, with the corresponding payload and sequence information. Carried in `EventEnvelope`; dispatched by `BacktestEngine` to `MarketModel`. |
 | `EventEnvelope` | **v1 core**; v2 also carries response events | Scheduling/provenance wrapper shared by queued market events and simulated actions. Keeps logical event order distinct from the payload's exchange sequence. | Contains logical time, causal round, priority, insertion sequence, source/identity, original timestamp meanings and validity/context references. Owned by `EventQueue`; must support deterministic dispatch. |
 | `MarketTradeEvent` | **Optional v2 refinement** for the validated public-trade adapter | Public observed trade from an external feed, used for market-volume features and eligible execution models. It does not identify the simulator's maker/taker orders. | Contains instrument, public trade identity, price/quantity, available aggressor information and timestamp/provenance. Requires a new validated trade ingest path before volume-based models can use it. |
-| `MarketView` | **v1 core**; reused by v2 | Read-only strategy/execution-facing projection of currently available market state. Carries uncertainty rather than presenting all absent levels as empty. | Exposes instrument/grid, visible time, sequence ID, trusted horizons/top, observed depth and supported trade context. Created from a backend; must not reveal future events or mutable private book internals. |
+| `MarketView` (E) | **v1 core**; reused by v2 | Read-only strategy/execution-facing projection of currently available market state. Carries uncertainty rather than presenting all absent levels as empty. | Exposes instrument/grid, visible time, sequence ID, trusted horizons/top, observed depth and supported trade context. Created from a backend; must not reveal future events or mutable private book internals. |
 | `OrderRequest` | **v1 core**; reused by v2 | Strategy intent to submit a market/limit order or request cancellation. It is not evidence that the exchange has accepted or filled anything. | Contains action kind, request/order reference, side, requested price/quantity and visible submission time as applicable. Returned by `Strategy`; validated and mapped to lifecycle state by `OrderManager`. |
 | `StrategyAction` | **v2** committed-action contract for reactive models | Committed accepted action made available to a reactive model after the simulator resolves the corresponding request or execution. | Identifies action kind, order/fill references, committed time and relevant posted/cancelled/executed quantity. Passed to `MarketModel.on_strategy_action()`; supported reaction kinds are declared by `ResponseModel`. |
 | `FillRecord` | **v1 core**; reused by v2 | Unique normalized execution fact used by accounting and analysis across all execution models. | Carries stable fill/order IDs, execution time, instrument, side, integer price/quantity, liquidity role and model provenance. `Portfolio` applies it once; it is also journaled and scheduled for strategy notification. |

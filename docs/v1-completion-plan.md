@@ -1,9 +1,9 @@
 # COUNTERBACK v1 completion plan
 
-Status review: 7 November 2026. Repository inspected on `main` at `bb2b50b`,
-with the system-design document, diagram sources, WP1 implementation and README
-edits still local and uncommitted. This is a delivery plan, not an instruction to implement every
-proposed class immediately or a claim that planned functionality already exists.
+Status review: 7 November 2026. WP1 is committed at `1f6a150`; WP2 runtime,
+adapters, tests and documentation are implemented locally. See
+[WP2 validation](wp2-validation.md) for acceptance evidence. This is a delivery
+plan, not a claim that the remaining proposed classes already exist.
 
 The [README roadmap](../README.md#roadmap) names 30 November 2026 as the v1 target.
 That remains a target, not a completion forecast. Progress below is measured
@@ -66,6 +66,7 @@ does not promise that aggregate Binance data reveals actual passive FIFO fills.
 | Foundation validation and build infrastructure | M16 | Python tests, matching/replay CTest targets and configured Linux/macOS Debug/Release CI. These cover existing components, not missing strategy/accounting integrations. |
 | One real-day reconstruction milestone | M03–M05 | Recorded validation for BTCUSDT 2026-09-14: 862,298 applied updates, zero joint sequence gaps/structural errors, 99.8576% trusted coverage, and C++/Python equality at 172 depth checkpoints plus final state. This was state replay, not a strategy test. |
 | WP1 simulation contract and policy primitives | M04, M07–M10 | Frozen availability/order/latency/fee/valuation/validity semantics, machine-readable example and tested helpers. These do not implement the WP2 event loop or WP3 account. |
+| WP2 deterministic runtime and adapters | M05–M08, M15–M16 | `BacktestEngine`, queue/clock, immutable `MarketView`, streaming `ReplayMarket`, thin `SyntheticMarket`, stable journal sink and causal/reference tests. See [WP2 validation](wp2-validation.md). Historical fills/accounting remain WP3. |
 | WP1 inventory and immutable preparation cache | M03–M04, M15–M16 | `dataset.py` provides read-only metadata inventory, fresh verification/export, content identities, validated reuse and explicit excluded/unavailable/failure states. See [WP1 validation](wp1-validation.md) for current measured scope. |
 
 The complete original evidence and limitations are in
@@ -81,13 +82,13 @@ replay was not rerun during this review.
 | Architecture, module/class responsibilities and release allocation | **In progress — design** | `docs/system-design.md`, seven diagram sources and README documentation edits exist locally. Review/finalize the v1 contracts and publish the design through the normal Git workflow. |
 | WP1 delivery | **Implemented — initial acceptance gate; bulk archive qualification remains pending** | Contract, inventory/cache tooling and synthetic tests exist; the first freshly prepared development day is usable for the next implementation stage. See [WP1 validation](wp1-validation.md) for measured audits and limitations. |
 | Market-data collection/qualification | **Metadata inventoried; bulk payload qualification pending; current host operations not verified** | WP1 observed 62 mounted-archive dates and freshly prepared two restored development days. Remaining archive dates are unverified; no additional monthly-momentum dataset is required for v1. |
-| Reproducibility | **Partial** | Capture/export/prepared-bundle identities and corruption-checked cache reuse exist. Full run configuration, event/order/fill/fee/equity journals and a backtest `RunManifest` are missing. |
+| Reproducibility | **Partial** | Capture/export/prepared-bundle identities and corruption-checked cache reuse exist. WP2 adds initial ordered event journals; full run configuration, order/fill/fee/equity journals and a backtest `RunManifest` remain missing. |
 | Operations/validation | **Partial** | Deployment/offload/pruning scripts and foundation tests exist. Current two-host production acceptance, a broad restored-day audit, and trading-level validation remain unverified or unimplemented. |
 
-**No trading-runtime implementation in progress was identified in this checkout.**
-`BacktestEngine`, `EventQueue`, `OrderManager`, `Portfolio`, Python strategy
-bindings and the report pipeline are currently proposed designs. Documentation
-work must not be counted as completed code for those components.
+**WP2 runtime is implemented.** `BacktestEngine`, `EventQueue`, `SimulationClock`,
+`MarketModel`, `MarketView`, `ReplayMarket` and `SyntheticMarket` now have code
+and acceptance tests. `OrderManager`, historical execution, `Portfolio`, Python
+bindings and reporting remain future work.
 
 ## 5. Outstanding v1 work by module
 
@@ -97,10 +98,10 @@ work must not be counted as completed code for those components.
 | M02 Raw storage | **Done — foundation** | Reuse immutable originals and restore into a local dataset workspace. |
 | M03 Verification | **Done — software; dataset-wide qualification not verified** | Verify all candidate completed days and publish a usable/excluded-day inventory. |
 | M04 Integer ingest | **WP1 preparation implemented; multi-day runtime feed outstanding** | Inventory, preparation orchestration, immutable dataset identities and validated reuse now exist. Complete the continuous multi-day trading feed in WP6. |
-| M05 Historical market state | **Done — offline foundation** | Integrate with the causal runtime while preserving the recorded L2 semantics and compatibility limitations. |
+| M05 Historical market state | **Done — WP2 integration** | Causal availability now gates the unchanged reconstruction path; retain L2 execution limitations in WP3. |
 | M06 Synthetic matching | **Done — foundation** | Reuse in the synthetic backend and execution regression scenarios; never route Binance deltas into it. |
-| M07 Simulation scheduling | **Not started** | Queue, clock, coordinator, deterministic priorities, visibility and delayed notifications. |
-| M08 Market backends | **Not started** | Common backend/view contract, `ReplayMarket`, and the compatible synthetic adapter. Reactive implementation is excluded from v1. |
+| M07 Simulation scheduling | **Done — WP2 foundation** | Queue/clock/coordinator, causal priorities, read-only visibility and generic delayed callbacks. Managed order/account notifications remain WP4. |
+| M08 Market backends | **Done — WP2** | Common backend/view contract, `ReplayMarket`, and thin synthetic adapter. Reactive implementation remains v2. |
 | M09 Orders and execution | **Not started** | Lifecycle, arrival-time execution, explicit L2 fill/budget policies, market/limit/cancel support and latency. |
 | M10 Accounting and costs | **Not started** | Checked money arithmetic, cash/position, commissions, valuation and cost attribution. Explicit impact models are excluded from v1. |
 | M11 Strategy API | **Not started** | Python interface/bindings and the mean-reversion reference strategy. |
@@ -113,8 +114,8 @@ work must not be counted as completed code for those components.
 
 ## 6. Ordered implementation plan
 
-WP1 is implemented to its initial acceptance gate; WP2–WP8 remain **not started
-as implementation**. Bulk day qualification can continue alongside WP2. Finish and demonstrate an acceptance gate before
+WP1 and WP2 have passed their initial acceptance gates; WP3–WP8 remain **not
+started as implementation**. Bulk day qualification can continue alongside WP3. Finish and demonstrate an acceptance gate before
 making the next package depend on it. Reviewable changes can be delivered as
 separate branches/PRs; proposed branch names or APIs are not pre-created here.
 
@@ -154,6 +155,10 @@ quality decisions. The whole reported two-month archive is not assumed verified.
 WP1 tools preserve unverified candidates rather than silently marking them accepted.
 
 ### WP2 — Build the deterministic runtime and backend adapters
+
+**Status: implemented and acceptance-tested.** See the [runtime guide](wp2-runtime.md)
+and [validation record](wp2-validation.md). The synthetic path supports order-level
+fixtures; historical order execution/accounting remains WP3.
 
 Modules: M05–M08, M15. Depends on WP1's time/validity contracts.
 
@@ -369,7 +374,7 @@ Relevant sources:
 - [Recorded real-day and regression evidence](historical-replay-validation.md).
 - [Operational acceptance requirements](runbook.md#seven-day-production-acceptance).
 
-**Immediate next implementation:** WP2's causal runtime/replay adapters, followed
-by WP3's market-order execution/accounting slice. Continue bulk qualification of
+**Immediate next implementation:** WP3's market-order execution/accounting slice
+on the tested WP2 runtime and adapters. Continue bulk qualification of
 the discovered archive using the implemented WP1 preparation tooling.
 Do not start v2 response models to compensate for an incomplete v1 trading loop.

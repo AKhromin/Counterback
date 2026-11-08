@@ -19,9 +19,15 @@ struct ReplayStatistics {
 
 class ReplayEngine {
 public:
+    struct Timing {
+        bool ignored; // Duplicate/stale: no visible state change or clock tick.
+        std::uint64_t snapshot_receive_ns;
+    };
     // Snapshot order is the Python verifier's source-list order; see replay docs.
     ReplayEngine(std::string symbol, std::vector<DepthSnapshot> snapshots);
     std::string apply(const DepthUpdate& event);
+    // Pure lookahead of bridge selection, sharing the apply() validation/cursor rules.
+    Timing timing(const DepthUpdate& event) const;
     
     const std::optional<HistoricalBook>& book() const { 
         return book_; 
@@ -35,6 +41,12 @@ public:
     void write_checkpoint(std::ostream& out, bool summary = false) const;
 
 private:
+    struct Plan {
+        const DepthSnapshot* bridge;
+        std::size_t next_snapshot;
+        bool duplicate;
+    };
+    Plan plan(const DepthUpdate& event) const;
     std::string symbol_, status_ = "unanchored";
     std::vector<DepthSnapshot> snapshots_;
     std::size_t snapshot_index_ = 0;
