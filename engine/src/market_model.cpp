@@ -42,7 +42,7 @@ std::optional<Quantity> MarketView::quantity_at(OrderSide side, Price price) con
 }
 
 ExecutionReport MarketModel::submit(const Order&, Timestamp) {
-    throw std::logic_error("backend does not support order-level execution; historical fills require WP3");
+    throw std::logic_error("backend does not support order-level execution; use historical execution policy");
 }
 bool MarketModel::cancel(OrderId, Timestamp) {
     throw std::logic_error("backend does not support order-level cancellation");
@@ -60,7 +60,8 @@ std::optional<MarketEvent> ReplayMarket::next_event() {
             continue;
         }
         const auto time = std::max({prefix_ns_, depth->observation.rx_utc_ns, timing.snapshot_receive_ns});
-        pending_ = MarketEvent{reader_.records_read(), time, timing.snapshot_receive_ns, std::move(*depth)};
+        pending_ = MarketEvent{reader_.records_read(), time, timing.snapshot_receive_ns, std::move(*depth),
+                               timing.replaces_book};
         return pending_;
     }
     return std::nullopt;

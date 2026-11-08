@@ -1,6 +1,6 @@
 # COUNTERBACK: high-level system design
 
-Design review: 7 November 2026. Based on the repository specification in
+Design review: 8 November 2026. Based on the repository specification in
 [README](../README.md), the [decision log](decision-log.md), the current Python
 and C++ interfaces, and the separate local DiffLOB README. This document proposes
 the complete backtesting architecture; it does not implement the missing modules.
@@ -20,8 +20,9 @@ WP1's baseline rules are frozen in the [v1 simulation contract](v1-execution-con
 The [dataset preparation guide](dataset-preparation.md) describes the implemented
 inventory/cache tooling; [WP1 validation](wp1-validation.md) records its measured
 scope. [WP2 runtime and adapters](wp2-runtime.md) now implement causal scheduling,
-immutable market views and initial journals. Historical execution/accounting and
-Python bindings remain later work.
+immutable market views and initial journals. [WP3 market orders and accounting](wp3-market-orders.md)
+now implement the first historical trading slice. Managed limit/cancel behavior,
+delayed account knowledge and Python bindings remain later work.
 
 The [class and data-type catalogue](#10-class-and-data-type-catalogue) describes
 every class in the diagrams, the additional records named in this design, and
@@ -61,8 +62,9 @@ additional modules. Binance is an external input, not a module in the table.
 Solid arrows show the main data/control relationships. Dashed arrows show
 selected cross-cutting support relationships, not market-event messages. The
 detailed event sequence is in section 6; the class-level decomposition is in
-sections 4, 5 and 10. The offline path and WP2 scheduling/backend foundation are implemented;
-trading execution/accounting and research/reporting remain proposed.
+sections 4, 5 and 10. The offline path, WP2 scheduling/backend foundation and WP3
+historical market execution/accounting are implemented; the full order lifecycle,
+Python strategy integration and research/reporting remain proposed.
 
 ```mermaid
 flowchart TB
@@ -79,8 +81,8 @@ flowchart TB
         m06["M06 Synthetic matching<br/>E - v1 foundation, reusable by v2"]
         m07["M07 Simulation scheduling<br/>E/P - WP2 core, managed actions later"]
         m08["M08 Market backends<br/>E/P - replay/synthetic built, reactive later"]
-        m09["M09 Orders and execution<br/>P - v1 core, optional v2 refinements"]
-        m10["M10 Accounting and costs<br/>P - v1 accounting, v2 impact"]
+        m09["M09 Orders and execution<br/>E/P - market orders built, limits/cancels later"]
+        m10["M10 Accounting and costs<br/>E/P - accounting built, v2 impact later"]
         m11["M11 Strategy API<br/>P - v1 API, reused by v2 strategies"]
         m12["M12 Reactive model adapters<br/>P - v2, optional learned adapter later"]
         m07 -->|dispatch market events| m08
@@ -164,14 +166,14 @@ classes/files; use the diagram to see how that module interacts with others.
 | **M06 — Synthetic matching** | Individual order IDs, FIFO queues, limit/market orders, cancellation and fills | **v1 foundation**; reusable in compatible v2 order-level markets | E: `MatchingEngine` and structs in `types.hpp` |
 | **M07 — Simulation scheduling** | One causal event queue, simulated clock, event priorities, delayed actions and deterministic dispatch | **v1 core**, reused by v2 to schedule responses | E: `BacktestEngine`, `EventQueue`, `SimulationClock`; managed order/account notifications remain WP4 |
 | **M08 — Market backends** | Replay, synthetic order-level world and mechanistic reactive world behind one interface | **v1:** common interface, replay and synthetic adapters. **v2:** reactive backend | E: `MarketModel`, `ReplayMarket`, `SyntheticMarket`, `MarketView`; P: `ReactiveMarket` |
-| **M09 — Orders and execution** | Strategy order lifecycle, rejects, cancellations, latency, fill assumptions, consumed liquidity | **v1:** working execution, slippage, lifecycle and latency contract. **v2 optional refinements:** participation/queue estimators requiring additional data | P: `OrderManager`, `LatencyModel`, `ExecutionModel`, `LiquidityBudget` |
-| **M10 — Accounting and costs** | Fill-driven cash/inventory, fees, optional impact charges, valuation and attribution | **v1:** portfolio, fees, valuation and execution/slippage attribution. **v2:** explicit calibrated impact models | P: `Portfolio`, `FeeModel`, `ImpactCostModel`, `ValuationPolicy`, `FillRecord` |
+| **M09 — Orders and execution** | Strategy order lifecycle, rejects, cancellations, latency, fill assumptions, consumed liquidity | **v1:** working execution, slippage, lifecycle and latency contract. **v2 optional refinements:** participation/queue estimators requiring additional data | E: `MarketOrderExecution`, `LiquidityBudget`, `FillRecord`, `ExecutionOutcome`; P: `OrderManager`, `LatencyModel`, general `ExecutionModel`, limits/cancels |
+| **M10 — Accounting and costs** | Fill-driven cash/inventory, fees, optional impact charges, valuation and attribution | **v1:** portfolio, fees, valuation and execution/slippage attribution. **v2:** explicit calibrated impact models | E: `Portfolio`, `PortfolioSnapshot`, `FeeModel`, `ValuationPolicy`, `MoneyGrid`, checked `Money`/`Exact`; P: reservations/delayed visible account, `ImpactCostModel` |
 | **M11 — Strategy API** | Read-only book/trades/clock/portfolio; return market/limit/cancel requests | **v1:** Python API/bindings and intraday mean reversion. **v2:** monthly momentum control using the same API | P: Python `Strategy`, C++ `StrategyBridge`, pybind11 module |
 | **M12 — Reactive model adapters** | Apply a declared response law; optionally consume validated learned background flow | **v2:** mechanistic response. **Optional v2/later:** learned scenario adapter; not a v1 gate | P: `ResponseModel`, `GeneratorAdapter`; no current DiffLOB integration |
 | **M13 — Experiments** | Size/seed/day/model sweeps and paired replay/reactive runs | **v1:** baseline run/configuration harness. **v2:** paired reactive scenarios. **After v2:** full research sweeps | P: `ExperimentRunner`, `Scenario`, `RunConfig`, `RunResult` |
 | **M14 — Evaluation and reports** | Equity/drawdown, costs/fills, Sharpe/Deflated Sharpe inputs, divergence, confidence intervals, realism scorecard | **v1:** trading diagnostics and results write-up. **v2:** response/realism diagnostics. **After v2:** final divergence statistics and scorecard | P: `MetricsCalculator`, `DivergenceAnalyzer`, `RealismSuite`, `ReportBuilder` |
-| **M15 — Reproducibility** | Config, source hashes, code/environment/model versions, seeds, event/fill/accounting logs | **v1 core**, extended in v2 with response/model identities and reused for the final study | E: capture/export evidence, initial runtime journal records/sink; P: complete `RunManifest`, `EventJournal` |
-| **M16 — Operations and validation** | systemd, offload/restore/pruning, health checks, offline tests, reference comparisons | **v1:** recorder/engine/accounting validation. **v2:** reactive-model and round-trip validation | E: `deploy/`, `.github/workflows/ci.yml`, CTest/Python suites; P: backtest/accounting/response validation |
+| **M15 — Reproducibility** | Config, source hashes, code/environment/model versions, seeds, event/fill/accounting logs | **v1 core**, extended in v2 with response/model identities and reused for the final study | E: capture/export evidence, runtime/order/fill/fee/account/valuation journals; P: complete `RunManifest`, artifact-owning `EventJournal` |
+| **M16 — Operations and validation** | systemd, offload/restore/pruning, health checks, offline tests, reference comparisons | **v1:** recorder/engine/accounting validation. **v2:** reactive-model and round-trip validation | E: `deploy/`, `.github/workflows/ci.yml`, CTest/Python suites including WP3 accounting reference; P: complete v1/external-engine and response validation |
 | **M17 — Performance profiling** | Benchmark fixed workloads and identify time/memory costs in the C++ event loop, matching and replay paths | **v2**, as specified in the README roadmap | P: profiling/benchmark harness and recorded configurations; no dedicated implementation claimed |
 
 ### 3.1 Meaning of the release assignments
@@ -335,9 +337,11 @@ the simulator actually has individual order-level events.
 
 The diagram shows the target composition. WP2 implements `BacktestEngine`,
 `EventQueue`, `SimulationClock`, `MarketModel`, `ReplayMarket` and `SyntheticMarket`.
-Order/account management, Python bridges and reactive models remain proposed.
+WP3 adds `MarketOrderExecution`, `LiquidityBudget`, `Portfolio`, `FeeModel` and
+`ValuationPolicy` outside the broader proposed execution hierarchy shown below.
+Managed lifecycle/notifications, Python bridges and reactive models remain proposed.
 Methods on those proposed components indicate responsibilities, not finalized
-signatures; see [the runtime guide](wp2-runtime.md) for current APIs.
+signatures; see [the runtime guide](wp2-runtime.md) and [WP3 guide](wp3-market-orders.md) for current APIs.
 
 ```mermaid
 classDiagram
@@ -513,8 +517,8 @@ The local LOBSTER/equity smoke work does not establish a BTCUSDT generator.
 | `MarketView` (E) | Read-only observed depth, trusted horizons, sequence/time and instrument metadata; never expose future or private mutable state. |
 | `OrderRequest` (P) | Strategy market/limit/cancel instruction; distinct from `DepthUpdate`. The manager owns IDs and lifecycle state. |
 | `StrategyAction` (P) | Accepted posting/cancellation or execution committed by the simulator; the declared response model decides which action kinds affect the market. |
-| `FillRecord` / `ExecutionOutcome` (P) | Stable fill IDs, execution time, price/quantity, liquidity role, status and model provenance; normalize current matching reports and future L2 estimates. |
-| `PortfolioSnapshot` / `CostBreakdown` (P) | Visible balance/inventory and separately attributed fees, spread/slippage and impact, with units and valuation status. |
+| `FillRecord` / `ExecutionOutcome` (E) | WP3 historical execution records with stable IDs, symbol, execution time, price/quantity, notional/fee and terminal status/reason. Journal role/model labels are modeled taker-like historical depth execution. Synthetic normalization remains an extension. |
+| `PortfolioSnapshot` (E) / `CostBreakdown` (P) | WP3 authoritative cash/inventory, exact gross basis/P&L, separate fees, equity and valuation validity. Delayed strategy-visible snapshots and richer cost breakdown remain proposed. |
 | `RunConfig` / `RunManifest` / `RunResult` (P) | Resolved assumptions, reproducibility identity and immutable logs/metrics/report references. |
 
 Public recorded trades (`MarketTradeEvent`, proposed) differ from the current
@@ -592,8 +596,9 @@ Required runtime rules:
 
 The [WP1 contract](v1-execution-contract.md) now defines baseline availability,
 delayed notification, L2 replenishment, taker-like/crossing-only execution,
-fee rounding, valuation and trust-loss behavior. WP2 implements the scheduling/backend foundation; order execution, account
-visibility and multi-day integration remain WP3–WP6 work. Optional queue-estimation refinements and response-law calibration
+fee rounding, valuation and trust-loss behavior. WP2 implements the scheduling/backend
+foundation; WP3 implements historical market orders/accounting. Limits/cancels,
+delayed account visibility and multi-day integration remain WP4–WP6 work. Optional queue-estimation refinements and response-law calibration
 remain separate later decisions.
 
 ## 7. Experiment and reporting structure
@@ -847,7 +852,7 @@ pending, rejected and cancelled lifecycle states explicitly.
 
 | Class / interface | Version / release scope | Description and responsibility | State, operations and collaborators |
 | --- | --- | --- | --- |
-| `BacktestEngine` (E/P) | **v1 core**; reused by v2 | WP2 coordinates a single-use causal market run, C++ callbacks, readiness and trust-loss halts. Historical fills/accounting remain WP3. | Owns queue/clock and an optional journal sink; references one backend. `run()` returns `RuntimeResult`; `schedule()` adds timers; synthetic-only `submit_after()` / `cancel_after()` exercise arrival timing. Order/account management remains proposed. |
+| `BacktestEngine` (E/P) | **v1 core**; reused by v2 | Coordinates a single-use causal run, readiness, trust-loss halts and WP3 historical market orders/accounting. | Owns queue/clock, optional account and journal sink; references one backend. `RuntimeConfig.account` enables historical `submit_after()`; `portfolio()` is authoritative const state. `cancel_after()` remains synthetic-only. Managed limit/cancel lifecycle and notifications remain WP4. |
 | `EventQueue` (E) | **v1 core**; v2 also schedules response events | Schedules market events and simulated actions in a stable total order. Ensures an intervening market event is processed before an order whose arrival is later. | Holds pending `EventEnvelope` values ordered by simulation time, causal round, event priority and insertion sequence. `push()` schedules work; `pop_next()` selects the next event. Used by `BacktestEngine`, including for latency and response events. |
 | `SimulationClock` (E) | **v1 core**; reused by v2 | Represents simulated time independently of real execution speed or wall-clock sleeps. | Holds the current logical time and advances monotonically to the next queued event. Read by strategies, order/execution models and response policies; only the coordinator should control advancement. |
 | `StrategyBridge` | **v1**; reused by v2 strategies | Adapts the C++ runtime to the Python strategy interface through the proposed pybind11 boundary. | Holds a strategy reference and performs explicit conversion/lifetime management for read-only views and returned requests. `on_event()` passes only information visible at that simulation time and validates returned request types. |
@@ -868,20 +873,21 @@ pending, rejected and cancelled lifecycle states explicitly.
 | `MechanisticResponse` | **v2** | First concrete reactive policy, using a specified and testable response law rather than a learned generator. | Holds configured response/decay parameters and any impact history required by the chosen law. Can initially react to executed flow only; richer posting/cancellation responses require explicit support and validation. |
 | `GeneratorAdapter` | **Optional v2/later**; not a v1 gate | Optional boundary around an external generator or a pinned generated event tape. Translates supported model inputs/outputs into simulator-compatible background/scenario events. | Exposes `capabilities()` and `next_events(context)` with units, timing, context, seed/checkpoint identity and continuity checks. Works with a compatible response backend; an adapter alone does not make DiffLOB agent-order-conditioned. |
 
-### 10.7 Execution, liquidity, accounting and costs — proposed classes (P)
+### 10.7 Execution, liquidity, accounting and costs — existing and proposed
 
 | Class / interface | Version / release scope | Description and responsibility | State, operations and collaborators |
 | --- | --- | --- | --- |
+| `MarketOrderExecution` (E) | **v1 WP3** historical market orders | Executes an arrived market request against trusted visible depth and a separate consumption budget, with whole-order funding validation and immediate remainder expiry. | `observe()` resets applied absolute price observations/replacing snapshots; `execute()` stages fills/budget and atomically applies the portfolio; `terminate()` expires pending actions. Owns lifetime IDs and the budget. General limit/cancel lifecycle remains WP4. |
 | `ExecutionModel` | **v1** interface; supports v2 refinements | Common policy for turning an arrived order and current market state into execution/status outcomes. Defines fill assumptions independently of the strategy. | Candidate `execute(order, market, clock)` produces `ExecutionOutcome`. Concrete implementations read `MarketView`, consume a declared liquidity budget or delegate to order-level matching. They must report uncertainty and unsupported capabilities. |
 | `MidSpreadExecution` | **v1** coarse execution benchmark | Deliberately coarse execution benchmark based on a declared midpoint/spread rule. Useful as a comparison against richer models, not evidence of queue realism. | Holds price/eligibility assumptions. Reads trusted top-of-book data at arrival time and emits normalized fills. Limit-order behavior and liquidity constraints must be specified rather than automatically filling all requested limits. |
 | `VolumeParticipationExecution` | **Optional v2 refinement**; requires aligned public trades | Limits simulated fills to a configured share of eligible public traded volume over a defined window. | Maintains or queries eligible-volume usage and a `LiquidityBudget`. Requires aligned `MarketTradeEvent` inputs and an explicit allocation/window rule; cannot operate faithfully from the current depth-only C++ export. |
 | `QueueEstimateExecution` | **Optional v2 refinement**; requires explicit queue/data assumptions | Estimates passive limit-order execution when only aggregate L2 state and, where available, trades are observed. | Tracks estimated quantity ahead, own remainder, cancellations/consumption assumptions and budget usage. Emits model-qualified fills; observed depth reductions alone cannot establish whether an actual execution occurred. |
 | `MatchingExecution` | **v1** order-level execution adapter; reusable by v2 | Uses actual synthetic order-level matching as its execution mechanism. Converts backend results into the common backtesting contracts. | Delegates an arrived order to `SyntheticMarket`/`MatchingEngine`, then translates `ExecutionReport` and `Trade`. It must not also apply a separate L2 fill approximation to the same order. |
-| `LiquidityBudget` | **v1** execution foundation; reused by v2 | Tracks simulated use of eligible market liquidity to prevent multiple orders from repeatedly consuming the same quantity between replenishment events. | Holds consumed/available quantity by the policy's price/time/volume keys. `available()` and `consume()` enforce allocation; replenishment is explicit. Used by suitable L2 fill policies without rewriting the historical book. |
-| `Portfolio` | **v1 core**; reused by v2 | Authoritative single-instrument account state: cash, position and fill-driven accounting. Produces valuation and strategy-visible snapshots through declared policies. | Applies each `FillRecord` and cash charge once using checked money/notional arithmetic. `mark()` delegates to `ValuationPolicy`; `snapshot()` returns `PortfolioSnapshot`. Delayed strategy knowledge is separate from already-committed account changes. |
-| `FeeModel` | **v1**; reused by v2 | Calculates explicit commission charges for simulated fills under a configured schedule. | Holds fee parameters and their units. `calculate(fill)` returns a charge/cost component consumed by accounting. Fees are separate from spread or depth slippage already embedded in execution prices. |
+| `LiquidityBudget` (E) | **v1** execution foundation; reused by v2 | Tracks simulated consumption independently of the historical book. | Owns consumed quantity by side/price. `available()` / `consume(fill, observed)` check quantities; `observe()` resets only named absolute observations or all prices on snapshot replacement. |
+| `Portfolio` (E) | **v1 core**; reused by v2 | Authoritative cash-funded long-only account with fill-driven cash, inventory, gross weighted-average basis/P&L and separate fees. | `apply(outcome)` validates every fill/fee and checks duplicate IDs before committing; `snapshot(view)` delegates to `ValuationPolicy`. Uses checked `MoneyGrid`/`Money` and rational `Exact`. Reservations/delayed strategy knowledge remain WP4. |
+| `FeeModel` (E) | **v1**; reused by v2 | Calculates exact quote-currency taker benchmark charges. | `cumulative_fee(notional)` uses a configured exact rate and per-order ceiling; execution charges each fill's increase. Fees are separate from spread/depth effects already in execution prices. |
 | `ImpactCostModel` | **v2** explicit impact policy | Optional explicit impact-cost policy for experiments that represent impact as an additional modeled charge or execution-price adjustment. | Holds the selected fixed/square-root/optional decay-law parameters and required context/history. Produces attributed cost components. Its configuration must reconcile with execution slippage and reactive market response to avoid double counting. |
-| `ValuationPolicy` | **v1**; reused by v2 | Determines how position value and equity are marked from available market observations. Makes trust loss and unavailable-price behavior explicit. | Defines the chosen marking basis and admissible validity conditions. Used by `Portfolio`; returns value plus valuation status or a declared failure/exclusion decision. It must not silently carry a stale midpoint through invalid data. |
+| `ValuationPolicy` (E) | **v1**; reused by v2 | Marks long inventory at the current trusted best bid without assuming a terminal liquidation. | `mark(state, grid, view)` returns equity and exact unrealized gross P&L, or null/invalid valuation after required trust loss. Arithmetic overflow fails explicitly. |
 
 ### 10.8 Experiments, evaluation and reports — proposed classes (P)
 
@@ -897,7 +903,7 @@ pending, rejected and cancelled lifecycle states explicitly.
 | `RealismSuite` | **v2** model validation; final research scorecard after v2 | Runs the planned market/execution validation battery and reports both passes and failures. It does not establish unobservable counterfactual ground truth. | Evaluates appropriate real/generated paths, stylised facts, impact-law calibration, stability and round-trip/no-manipulation checks. Returns diagnostics consumed by `ReportBuilder`, with required data and model scope stated. |
 | `ReportBuilder` | **v1** baseline reports; v2 diagnostics and later research reports | Produces the self-contained HTML research report and navigable references to the reproducibility bundle. | Combines metrics, cost/fill diagnostics, equity/drawdown, divergence intervals, realism scorecards and warnings about excluded/invalid results. It presents analyzer outputs rather than rerunning trading logic or changing the ledger. |
 
-### 10.9 Shared event and result records — proposed types (P)
+### 10.9 Shared event and result records — existing and proposed
 
 These value objects keep public market observations, trading intent, committed
 actions and account state distinct. Their exact serialization schemas remain to
@@ -911,9 +917,9 @@ be finalized; they are descriptions of required information, not new live APIs.
 | `MarketView` (E) | **v1 core**; reused by v2 | Read-only strategy/execution-facing projection of currently available market state. Carries uncertainty rather than presenting all absent levels as empty. | Exposes instrument/grid, visible time, sequence ID, trusted horizons/top, observed depth and supported trade context. Created from a backend; must not reveal future events or mutable private book internals. |
 | `OrderRequest` | **v1 core**; reused by v2 | Strategy intent to submit a market/limit order or request cancellation. It is not evidence that the exchange has accepted or filled anything. | Contains action kind, request/order reference, side, requested price/quantity and visible submission time as applicable. Returned by `Strategy`; validated and mapped to lifecycle state by `OrderManager`. |
 | `StrategyAction` | **v2** committed-action contract for reactive models | Committed accepted action made available to a reactive model after the simulator resolves the corresponding request or execution. | Identifies action kind, order/fill references, committed time and relevant posted/cancelled/executed quantity. Passed to `MarketModel.on_strategy_action()`; supported reaction kinds are declared by `ResponseModel`. |
-| `FillRecord` | **v1 core**; reused by v2 | Unique normalized execution fact used by accounting and analysis across all execution models. | Carries stable fill/order IDs, execution time, instrument, side, integer price/quantity, liquidity role and model provenance. `Portfolio` applies it once; it is also journaled and scheduled for strategy notification. |
-| `ExecutionOutcome` | **v1 core**; reused by v2 | Result of processing one arrived order/action, including any fills and resulting lifecycle transition. | Contains accepted/rejected/partial/terminal status, reason, remainder and zero or more `FillRecord` values. Produced by `ExecutionModel`; consumed by `OrderManager`, accounting and notification scheduling. |
-| `PortfolioSnapshot` | **v1 core**; reused by v2 | Immutable account projection for a particular observation time. Prevents a strategy from mutating authoritative balances or reading notifications before they arrive. | Includes visible cash/position, valued equity where available, valuation status and time/reference metadata. Produced under the declared visibility/valuation policies; consumed by `Strategy` and reporting. |
+| `FillRecord` (E) | **v1 core**; reused by v2 | Unique WP3 historical execution fact consumed once by accounting and analysis. | Stable fill/order IDs, time, symbol, side, ticks/lots, quote-atom notional and incremental fee. Its journal labels modeled taker role and historical execution provenance. Strategy notifications and normalization of synthetic reports remain later work. |
+| `ExecutionOutcome` (E) | **v1 core**; reused by v2 | Terminal result of a WP3 market-order arrival or pending expiry. | Order/time, filled/expired/rejected status, reason, executed/remaining lots and fills. Produced by `MarketOrderExecution`, applied by `Portfolio` and journaled by the runtime; full managed lifecycle remains WP4. |
+| `PortfolioSnapshot` (E) | **v1 core**; reused by v2 | Value copy of authoritative WP3 account state and its current valuation; changing a copy cannot mutate the ledger. | Cash/position, exact gross basis/P&L, cumulative fees, quote precision, bid mark, equity/unrealized values and validity. `Portfolio.snapshot(view)` produces it. It is not yet a latency-delayed strategy projection; WP4 must separate notified knowledge. |
 | `CostBreakdown` | **v1** fees/slippage; **v2** adds explicit impact attribution | Typed attribution of the costs associated with executions and account results. Distinguishes cash charges from diagnostic measures already embedded in fill prices. | Separately identifies commissions, spread/depth slippage and explicit impact, with currency/units, reference prices and provenance. Used by accounting where charges apply, and by metrics/reporting without charging a component twice. |
 
 ### 10.10 Module aliases and names intentionally not implemented as classes

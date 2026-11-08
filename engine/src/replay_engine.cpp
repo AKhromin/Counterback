@@ -104,7 +104,7 @@ ReplayEngine::Plan ReplayEngine::plan(const DepthUpdate& event) const {
 ReplayEngine::Timing ReplayEngine::timing(const DepthUpdate& event) const {
     const auto next = plan(event);
     return {next.duplicate || (!next.bridge && book_ && event.final_update_id <= book_->last_update_id()),
-            next.bridge ? next.bridge->observation.rx_utc_ns : 0};
+            next.bridge ? next.bridge->observation.rx_utc_ns : 0, next.bridge != nullptr};
 }
 
 std::string ReplayEngine::apply(const DepthUpdate& event) {

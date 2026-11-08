@@ -3,8 +3,9 @@
 WP2 implements the deterministic C++ coordinator and its historical/synthetic
 backends. [Validation](wp2-validation.md) records the acceptance evidence.
 The [WP1 contract](v1-execution-contract.md) remains the source of time and
-validity rules. Historical order fills, portfolio accounting and fees are WP3;
-Python strategy bindings are WP5.
+validity rules. [WP3 now adds historical order fills, portfolio accounting and
+fees](wp3-market-orders.md); Python strategy bindings are WP5. This page describes
+the WP2 observation/synthetic interfaces and their original acceptance boundary.
 
 ## How the pieces fit
 
@@ -131,7 +132,9 @@ if a callback or sink throws.
 
 `schedule(time, priority, callback)` supports deterministic scripted timers and
 notifications. `submit_after(order, delay_ns)` and `cancel_after(id, delay_ns)`
-are available only with the synthetic order-level backend. Delayed actions see
+retain the synthetic order-level fixture interface. WP3 also enables historical
+`submit_after()` when `RuntimeConfig.account` is explicitly configured; historical
+cancellation remains unsupported. Delayed actions see
 intervening market changes; same-round arrivals precede cancellation. Actions
 exactly at end expire without execution, and later queued work remains
 undelivered in the termination diagnostics. Synthetic execution reports come
@@ -143,9 +146,9 @@ an early-stop run does not validate the unread footer/remainder of the input.
 Use an immutable WP1-prepared bundle with verified hashes; full-input integrity
 checks belong outside the per-event loop.
 
-WP3 will add historical execution, liquidity budgets, account state, fees and
-fill-driven accounting. WP4 will add managed order lifecycles, pending-request
-expiry/resting-order teardown, delayed authoritative-versus-visible account
+WP3 adds historical execution, liquidity budgets, account state, fees,
+fill-driven accounting and pending market expiry at end/halt. WP4 will add managed
+order lifecycles, resting-order teardown, delayed authoritative-versus-visible account
 knowledge and stochastic latency. The current generic notification scheduler
 does not claim those features. Complete run manifests/configuration and Python
 bindings remain WP5. Continuous multi-day sessions remain WP6.

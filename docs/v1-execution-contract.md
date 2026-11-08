@@ -14,6 +14,9 @@ WP2 now implements the [runtime and backend adapters](wp2-runtime.md), with
 `runtime_implemented: false` field records the WP1 publication state; it does
 not describe the current WP2 implementation or claim complete trading/accounting.
 
+WP3 implements [historical market orders and accounting](wp3-market-orders.md).
+The remaining limit/cancel lifecycle and delayed account knowledge are WP4.
+
 ## Time, sequencing and snapshot availability
 
 1. Preserve the existing verifier merge key `(U, u, rx_utc)` and input-recorder
@@ -122,8 +125,8 @@ Prices/quantities remain exact integer ticks/lots using captured grid metadata.
 Use integer quote atoms, with eight decimal places in the BTCUSDT reference
 policy. Reject a grid/notional that cannot be represented exactly, and use
 checked signed-128-bit-range arithmetic for intermediate notionals. Python
-policy helpers use exact fractions; a future C++ implementation must enforce
-the same bounds. Analytics cannot mutate the accounting ledger.
+policy helpers use exact fractions; WP3's C++ money/portfolio implementation
+enforces the same bounds. Analytics cannot mutate the accounting ledger.
 
 The reference fee rate is **0.001 (0.1%) as a benchmark assumption**, not a claim
 about Binance's current or the user's actual account fee. It is an explicit run

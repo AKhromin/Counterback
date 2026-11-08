@@ -22,6 +22,7 @@ public:
     struct Timing {
         bool ignored; // Duplicate/stale: no visible state change or clock tick.
         std::uint64_t snapshot_receive_ns;
+        bool replaces_book;
     };
     // Snapshot order is the Python verifier's source-list order; see replay docs.
     ReplayEngine(std::string symbol, std::vector<DepthSnapshot> snapshots);

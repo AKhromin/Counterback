@@ -12,8 +12,8 @@ flowchart TB
         m06["M06 Synthetic matching<br/>E - v1 foundation, reusable by v2"]
         m07["M07 Simulation scheduling<br/>E/P - WP2 core, managed actions later"]
         m08["M08 Market backends<br/>E/P - replay/synthetic built, reactive later"]
-        m09["M09 Orders and execution<br/>P - v1 core, optional v2 refinements"]
-        m10["M10 Accounting and costs<br/>P - v1 accounting, v2 impact"]
+        m09["M09 Orders and execution<br/>E/P - market orders built, limits/cancels later"]
+        m10["M10 Accounting and costs<br/>E/P - accounting built, v2 impact later"]
         m11["M11 Strategy API<br/>P - v1 API, reused by v2 strategies"]
         m12["M12 Reactive model adapters<br/>P - v2, optional learned adapter later"]
         m07 -->|dispatch market events| m08

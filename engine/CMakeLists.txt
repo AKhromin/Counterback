@@ -25,7 +25,8 @@ endif()
 add_executable(counterback_replay examples/historical_replay.cpp)
 target_link_libraries(counterback_replay PRIVATE counterback::historical)
 
-add_library(counterback_runtime src/market_model.cpp src/backtest_engine.cpp)
+add_library(counterback_runtime src/market_model.cpp src/backtest_engine.cpp
+    src/money.cpp src/portfolio.cpp src/execution.cpp)
 add_library(counterback::runtime ALIAS counterback_runtime)
 target_link_libraries(counterback_runtime PUBLIC counterback::historical counterback::engine)
 target_compile_features(counterback_runtime PUBLIC cxx_std_17)
@@ -38,6 +39,8 @@ endif()
 add_executable(counterback_runtime_replay examples/runtime_replay.cpp)
 set_target_properties(counterback_runtime_replay PROPERTIES OUTPUT_NAME counterback_runtime)
 target_link_libraries(counterback_runtime_replay PRIVATE counterback::runtime)
+add_executable(counterback_market_orders examples/market_orders.cpp)
+target_link_libraries(counterback_market_orders PRIVATE counterback::runtime)
 
 if(BUILD_TESTING)
     add_executable(counterback_engine_tests tests/matching_engine_test.cpp)
@@ -49,6 +52,9 @@ if(BUILD_TESTING)
     add_executable(counterback_runtime_tests tests/runtime_test.cpp)
     target_link_libraries(counterback_runtime_tests PRIVATE counterback::runtime)
     add_test(NAME deterministic_runtime COMMAND counterback_runtime_tests)
+    add_executable(counterback_accounting_tests tests/accounting_test.cpp)
+    target_link_libraries(counterback_accounting_tests PRIVATE counterback::runtime)
+    add_test(NAME market_execution_accounting COMMAND counterback_accounting_tests)
     if(COUNTERBACK_PYTHON_TESTS)
         find_package(Python3 3.11 REQUIRED COMPONENTS Interpreter)
         add_test(NAME historical_python_reference
@@ -56,9 +62,10 @@ if(BUILD_TESTING)
                 "${PROJECT_SOURCE_DIR}/tests/test_historical_replay.py"
                 "${PROJECT_SOURCE_DIR}/tests/test_wp1_contract.py"
                 "${PROJECT_SOURCE_DIR}/tests/test_wp1_dataset.py"
-                "${PROJECT_SOURCE_DIR}/tests/test_wp2_runtime.py" -q)
+                "${PROJECT_SOURCE_DIR}/tests/test_wp2_runtime.py"
+                "${PROJECT_SOURCE_DIR}/tests/test_wp3_accounting.py" -q)
         set_tests_properties(historical_python_reference PROPERTIES
             WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
-            ENVIRONMENT "COUNTERBACK_REPLAY_BINARY=$<TARGET_FILE:counterback_replay>;COUNTERBACK_RUNTIME_BINARY=$<TARGET_FILE:counterback_runtime_replay>")
+            ENVIRONMENT "COUNTERBACK_REPLAY_BINARY=$<TARGET_FILE:counterback_replay>;COUNTERBACK_RUNTIME_BINARY=$<TARGET_FILE:counterback_runtime_replay>;COUNTERBACK_TRADING_BINARY=$<TARGET_FILE:counterback_market_orders>")
     endif()
 endif()

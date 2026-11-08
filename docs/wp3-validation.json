@@ -1,0 +1,170 @@
+{
+  "base_commit": "973ba23ba5cc9a7b624eaad48a13560d4808bc2e",
+  "changes": "local uncommitted WP3 implementation",
+  "contract": "counterback-v1-contract-1",
+  "date_utc": "2026-11-08",
+  "example": {
+    "fees_atoms": "40200000",
+    "independent_expected_result": "pass",
+    "journal_sha256": "ca4299fb565a5ea1ef13f16c45802372cd582e42763f50e397138226eddb6338",
+    "quote_decimals": 8,
+    "terminal_cash_atoms": "999759800000",
+    "terminal_inventory_lots": 0
+  },
+  "kind": "counterback.wp3-validation",
+  "runs": [
+    {
+      "artifact_hashes_verified": {
+        "replay/events.l2": "f40223b6c7df8d0c91ed2460f42e6a3a96b71de2bba5437747b9822eb1c760f3",
+        "replay/evidence.json": "24e9b1660f6e26031cf27fce1c94a7bff907c90adece869470989f18bfa327ac",
+        "replay/expected.ndjson": "8c808adb12198790cf7f13391f2f030ed14eec904ebda7faec7c76cfe0614e0b",
+        "verification/verification-2026-09-14-btcusdt.json": "e1e71f5340b30e2206233f4de10e5c9801dfcf7aa86c4e587d6eccd3ff267767"
+      },
+      "binary_sha256": "383c37e18039b2a8b33286fa8aa83c34735637d9104eb20ae0e7162c2ffc340a",
+      "dataset_id": "48452ef954aed07ef0439a9d544079a5caa991ee9432d9eaa661f85f5068ba26",
+      "date_utc": "2026-09-14",
+      "end_ns": 1789344261541142176,
+      "independent_quote_fee_ledger_check": "pass",
+      "orders": [
+        {
+          "executed_lots": 100,
+          "fills": [
+            {
+              "fee_atoms": "7686001",
+              "fill_id": 1,
+              "liquidity_role": "modeled_taker",
+              "model": "historical_visible_depth_v1",
+              "notional_atoms": "7686001000",
+              "order_id": 1,
+              "price_ticks": 7686001,
+              "quantity_lots": 100,
+              "side": "buy",
+              "symbol": "BTCUSDT",
+              "time_ns": 1789344141541142176
+            }
+          ],
+          "order_id": 1,
+          "order_type": "market",
+          "price_ticks": 0,
+          "reason": "filled",
+          "remaining_lots": 0,
+          "requested_lots": 100,
+          "side": "buy",
+          "status": "filled",
+          "time_ns": 1789344141541142176
+        },
+        {
+          "executed_lots": 100,
+          "fills": [
+            {
+              "fee_atoms": "7684600",
+              "fill_id": 2,
+              "liquidity_role": "modeled_taker",
+              "model": "historical_visible_depth_v1",
+              "notional_atoms": "7684600000",
+              "order_id": 2,
+              "price_ticks": 7684600,
+              "quantity_lots": 100,
+              "side": "sell",
+              "symbol": "BTCUSDT",
+              "time_ns": 1789344201541142176
+            }
+          ],
+          "order_id": 2,
+          "order_type": "market",
+          "price_ticks": 0,
+          "reason": "filled",
+          "remaining_lots": 0,
+          "requested_lots": 100,
+          "side": "sell",
+          "status": "filled",
+          "time_ns": 1789344201541142176
+        }
+      ],
+      "orders_sha256": "854f2e014f333c0a3e875218859eb87a1b334b8be8100ffe208d6fc36a38140f",
+      "output_bytes": 2902427,
+      "output_sha256": "d4d96e91be846c986be97da0b14a583829da13a9af12a226796259a5270b4247",
+      "repeat_identical": true,
+      "runtime_events": 2620,
+      "scope": "short scripted round trip; not a full-day strategy evaluation",
+      "script": "1789344141541142176 0 1 buy 100\n1789344201541142176 0 2 sell 100\n",
+      "start_ns": 1789344000000000000,
+      "summary": {
+        "dispatched": 2620,
+        "ever_ready": true,
+        "halted": false,
+        "kind": "trading_summary",
+        "pending_events": 0,
+        "reason": "end",
+        "schema_version": 1,
+        "stopped_at_ns": 1789344261541142176
+      },
+      "terminal_account": {
+        "basis_atoms": {
+          "denominator": "1",
+          "numerator": "0"
+        },
+        "cash_atoms": "999983228399",
+        "equity_atoms": "999983228399",
+        "fees_atoms": "15370601",
+        "inventory_lots": 0,
+        "inventory_value_atoms": "0",
+        "mark_bid_ticks": 7684600,
+        "quote_decimals": 8,
+        "realized_gross_atoms": {
+          "denominator": "1",
+          "numerator": "-1401000"
+        },
+        "unrealized_gross_atoms": {
+          "denominator": "1",
+          "numerator": "0"
+        },
+        "valuation_valid": true
+      }
+    }
+  ],
+  "schema_version": 1,
+  "source_sha256": {
+    "engine/CMakeLists.txt": "2fce02355b4fb1394178dfb7215ba051c231cf9640603db20cf4643756c18126",
+    "engine/examples/market-orders.txt": "8c12afd95e809f6b8183694a8e7bbeddc33f60b59604831d02b90ae9c553bdc2",
+    "engine/examples/market_orders.cpp": "53c6e8d32e477299101007bb8899987f763e3874ecea324d23eccaebc110977b",
+    "engine/examples/runtime-fixture.l2": "63a451deac57ec7ba0742490a187165af1e7072aa51a2c569617202abb42e2e2",
+    "engine/include/counterback/backtest_engine.hpp": "6f0890da1806bda833de706eb54e09dc87301cd6773c0319c6d69bd023067464",
+    "engine/include/counterback/execution.hpp": "5ff14e351cb0d8a5b252e8d7ecb71b7011b7c6742e825f0048706b2dbbcfb41d",
+    "engine/include/counterback/historical_book.hpp": "e39d330a46ea9c0bcac2fbd28109f2b6c917f34eb23c98ac631b69c257a18b39",
+    "engine/include/counterback/market_model.hpp": "4cba333c270d73e3701d4d4a1d1686d6d8a8f809ffb6b79505fcd03f190d909d",
+    "engine/include/counterback/matching_engine.hpp": "fc36fb1865ad98c9b68030af89ce153584a49e55abf131cac5540abf4160b7bb",
+    "engine/include/counterback/money.hpp": "29b950e7a65dd686303e4f5d34a18df405adc7c8aeae32620adaba72d4fadb11",
+    "engine/include/counterback/portfolio.hpp": "34f9b442c39b4c2f50a204e698baa794bbf61208a01cc0caa4d29fae10de073e",
+    "engine/include/counterback/prepared_replay.hpp": "6801c622a6e891cffd3049dc720dddc538862077ecb2dde75150d152520c2aa7",
+    "engine/include/counterback/replay_engine.hpp": "51bf0849b981da6f6dec52919d7048d2e3d645746c48d55662740c4d879f09c8",
+    "engine/include/counterback/types.hpp": "4a08ed1755678cb6d92e9b0a906bb1db7eb52d05253b7f72ae897eab078f2662",
+    "engine/src/backtest_engine.cpp": "1c4819d43d54d0b6cb1c68f94aebbf9365bd90497a7a8fc489005e61b41ed569",
+    "engine/src/execution.cpp": "e5c25591289789ebb9a6ea37105411df71a471fb388f3ed59dfa2f57ff6320ce",
+    "engine/src/historical_book.cpp": "d0e9b9d9b9404b2d07ce78cef7c6edb6b9fd67a774137ce460f77f1931f2a680",
+    "engine/src/market_model.cpp": "d9f54bd5f8c30312d61d0514f1facfdbece336379ba542afb14b390f1ad0a7c2",
+    "engine/src/matching_engine.cpp": "804844bb7c270bf8f60f13af3defe7cebac87638f127a0714540195a78bb6c18",
+    "engine/src/money.cpp": "ba62155a386d47c99da51f01fc7dce5cfdb09849a935cd60b7f14de821e7df9e",
+    "engine/src/portfolio.cpp": "b50d669cf6596b0ebf0a86b37a3059eb4f9993c07933b732f44656ee60609956",
+    "engine/src/prepared_replay.cpp": "5628ff90a78fdb6d99094386401a46769381a156b0aefc50d9f0d5f135ded817",
+    "engine/src/replay_engine.cpp": "97e397a1b5cee14d2088f9fe7a803fbd8638266b2c3a61fed4505bd596a552b6",
+    "engine/tests/accounting_test.cpp": "2a6788ddba844334f607d2051736dfe5059662088d4df951d9540c3ce2797362",
+    "engine/tests/runtime_test.cpp": "f1834a3aff9eba3cda7b26e35b4e3129fe5bcaa6bdb26eedd52ae523c1255dd1",
+    "tests/test_wp3_accounting.py": "5e1431d2167988c09a13478c4d28f59c1269583741a48ab415b4b9bd742b3506"
+  },
+  "tests": {
+    "asan_ubsan_cpp_ctest_passed": 4,
+    "debug_ctest_passed": 5,
+    "live_deselected": 2,
+    "mypy": "pass",
+    "new_wp3_python_cases": 12,
+    "observations_per_seeded_scenario": 120,
+    "offline_python_passed": 123,
+    "orders_per_seeded_scenario": 240,
+    "python_coverage_percent": 84.37,
+    "python_reference_target_cases": 62,
+    "release_ctest_passed": 5,
+    "ruff": "pass",
+    "seeded_reference_scenarios": 3
+  }
+}

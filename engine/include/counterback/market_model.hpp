@@ -59,6 +59,7 @@ struct MarketEvent {
     Timestamp available_at_ns;
     Timestamp snapshot_receive_ns;
     MarketPayload payload;
+    bool replaces_book = false; // A selected snapshot can have receive timestamp zero.
 };
 
 class MarketModel {

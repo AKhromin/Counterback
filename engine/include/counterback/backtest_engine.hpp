@@ -1,6 +1,7 @@
 #pragma once
 
 #include "counterback/market_model.hpp"
+#include "counterback/portfolio.hpp"
 
 #include <functional>
 #include <limits>
@@ -71,6 +72,7 @@ struct RuntimeConfig {
     Timestamp start_ns = 0;
     Timestamp end_ns = std::numeric_limits<Timestamp>::max(); // Exclusive.
     std::uint64_t warmup_trusted_updates = 0;
+    std::optional<AccountConfig> account = std::nullopt; // Explicitly enable WP3 historical trading.
 };
 
 struct JournalRecord {
@@ -79,6 +81,10 @@ struct JournalRecord {
     MarketView view;
     bool ready;
     std::optional<ExecutionReport> execution;
+    std::optional<ExecutionOutcome> outcome = std::nullopt;
+    std::optional<PortfolioSnapshot> account = std::nullopt;
+    std::vector<ExecutionOutcome> terminated_orders = {};
+    std::optional<MarketValidity> validity_from = std::nullopt;
 };
 void write_journal_record(std::ostream& out, const JournalRecord& record);
 using JournalSink = std::function<void(const JournalRecord&)>;
@@ -90,9 +96,10 @@ struct RuntimeResult {
     std::uint64_t dispatched = 0, applied_updates = 0, strategy_callbacks = 0;
     std::size_t pending_events = 0;
     std::string reason;
+    std::optional<PortfolioSnapshot> account = std::nullopt;
 };
 
-// One engine/backend instance per run. Accounting and historical order execution are WP3.
+// One engine/backend/account instance per run. Managed lifecycle/notifications are WP4.
 class BacktestEngine {
 public:
     BacktestEngine(MarketModel& market, RuntimeConfig config, JournalSink journal = {});
@@ -101,6 +108,7 @@ public:
     MarketView view() const { return market_.view(); }
     bool ready() const { return ready_; }
     const RuntimeResult& result() const { return result_; }
+    const Portfolio& portfolio() const;
     // Timers/callbacks are useful for scripted causality fixtures before Python bindings.
     std::uint64_t schedule(Timestamp time, EventPriority priority, RuntimeCallback callback);
     std::uint64_t submit_after(Order order, Timestamp delay_ns = 0);
@@ -113,6 +121,9 @@ private:
     EventQueue queue_;
     SimulationClock clock_;
     RuntimeResult result_;
+    std::optional<Portfolio> portfolio_;
+    MarketOrderExecution historical_execution_;
+    std::map<std::uint64_t, Order> pending_orders_;
     bool used_ = false, finished_ = false, ready_ = false;
     std::uint64_t trusted_updates_ = 0;
 };

@@ -92,6 +92,55 @@ const char* event_kind(const EventEnvelope& event) {
     if (std::holds_alternative<StartEvent>(event.payload)) return "start";
     return "callback";
 }
+void atoms(std::ostream& out, Money value) { out << '"' << money_string(value) << '"'; }
+void exact(std::ostream& out, const Exact& value) {
+    out << "{\"numerator\":"; atoms(out, value.numerator());
+    out << ",\"denominator\":"; atoms(out, value.denominator()); out << '}';
+}
+void outcome_json(std::ostream& out, const ExecutionOutcome& outcome) {
+    const auto& order = outcome.order;
+    out << "{\"order_id\":" << order.id << ",\"side\":";
+    json_string(out, order.side == OrderSide::Buy ? "buy" : order.side == OrderSide::Sell ? "sell" : "invalid");
+    out << ",\"order_type\":";
+    json_string(out, order.type == OrderType::Market ? "market" : order.type == OrderType::Limit ? "limit" : "invalid");
+    out << ",\"price_ticks\":" << order.price << ",\"requested_lots\":" << order.quantity
+        << ",\"time_ns\":" << outcome.time_ns << ",\"status\":\"" << execution_status_name(outcome.status)
+        << "\",\"reason\":";
+    json_string(out, outcome.reason);
+    out << ",\"executed_lots\":" << outcome.executed << ",\"remaining_lots\":" << outcome.remaining
+        << ",\"fills\":[";
+    bool comma = false;
+    for (const auto& fill : outcome.fills) {
+        if (comma) out << ',';
+        comma = true;
+        out << "{\"fill_id\":" << fill.id << ",\"order_id\":" << fill.order_id
+            << ",\"time_ns\":" << fill.time_ns << ",\"price_ticks\":" << fill.price
+            << ",\"quantity_lots\":" << fill.quantity << ",\"notional_atoms\":";
+        atoms(out, fill.notional_atoms);
+        out << ",\"fee_atoms\":"; atoms(out, fill.fee_atoms);
+        out << ",\"symbol\":"; json_string(out, fill.symbol);
+        out << ",\"side\":\"" << (fill.side == OrderSide::Buy ? "buy" : "sell")
+            << "\",\"liquidity_role\":\"modeled_taker\",\"model\":\"historical_visible_depth_v1\"}";
+    }
+    out << "]}";
+}
+void account_json(std::ostream& out, const PortfolioSnapshot& account) {
+    out << "{\"quote_decimals\":" << account.quote_decimals << ",\"cash_atoms\":";
+    atoms(out, account.state.cash_atoms);
+    out << ",\"inventory_lots\":" << account.state.inventory_lots << ",\"basis_atoms\":";
+    exact(out, account.state.basis_atoms);
+    out << ",\"realized_gross_atoms\":"; exact(out, account.state.realized_gross_atoms);
+    out << ",\"fees_atoms\":"; atoms(out, account.state.fees_atoms);
+    out << ",\"valuation_valid\":" << (account.valuation_valid ? "true" : "false") << ",\"mark_bid_ticks\":";
+    price(out, account.mark_bid);
+    out << ",\"inventory_value_atoms\":";
+    if (account.inventory_value_atoms) atoms(out, *account.inventory_value_atoms); else out << "null";
+    out << ",\"equity_atoms\":";
+    if (account.equity_atoms) atoms(out, *account.equity_atoms); else out << "null";
+    out << ",\"unrealized_gross_atoms\":";
+    if (account.unrealized_gross_atoms) exact(out, *account.unrealized_gross_atoms); else out << "null";
+    out << '}';
+}
 } // namespace
 
 void write_journal_record(std::ostream& out, const JournalRecord& record) {
@@ -107,7 +156,8 @@ void write_journal_record(std::ostream& out, const JournalRecord& record) {
     const auto* market = std::get_if<MarketEvent>(&event.payload);
     optional_number(out, market ? std::make_optional(market->source_id) : std::nullopt);
     if (market) {
-        out << ",\"snapshot_receive_ns\":" << market->snapshot_receive_ns;
+        out << ",\"snapshot_receive_ns\":" << market->snapshot_receive_ns
+            << ",\"replaces_book\":" << (market->replaces_book ? "true" : "false");
         if (const auto* depth = std::get_if<DepthUpdate>(&market->payload)) {
             out << ",\"first_update_id\":" << depth->first_update_id
                 << ",\"final_update_id\":" << depth->final_update_id
@@ -142,12 +192,40 @@ void write_journal_record(std::ostream& out, const JournalRecord& record) {
             << ",\"executed_lots\":" << record.execution->executed
             << ",\"remaining_lots\":" << record.execution->remaining;
     }
+    if (const auto* order = std::get_if<Order>(&event.payload)) {
+        out << ",\"request\":{\"order_id\":" << order->id << ",\"price_ticks\":" << order->price
+            << ",\"quantity_lots\":" << order->quantity << '}';
+    }
+    if (record.outcome) { out << ",\"outcome\":"; outcome_json(out, *record.outcome); }
+    if (record.account) { out << ",\"account\":"; account_json(out, *record.account); }
+    if (!record.terminated_orders.empty()) {
+        out << ",\"terminated_orders\":[";
+        bool comma = false;
+        for (const auto& outcome : record.terminated_orders) {
+            if (comma) out << ',';
+            comma = true;
+            outcome_json(out, outcome);
+        }
+        out << ']';
+    }
+    if (record.validity_from) {
+        out << ",\"validity_transition\":{\"from\":\"" << validity_name(*record.validity_from)
+            << "\",\"to\":\"" << validity_name(record.view.validity()) << "\"}";
+    }
     out << "}\n";
 }
 
 BacktestEngine::BacktestEngine(MarketModel& market, RuntimeConfig config, JournalSink journal)
     : market_(market), config_(config), journal_(std::move(journal)) {
     if (config_.start_ns >= config_.end_ns) throw std::invalid_argument("run requires start < end");
+    if (config_.account) {
+        if (!market_.capabilities().historical_l2) throw std::invalid_argument("WP3 accounting requires historical L2");
+        portfolio_.emplace(market_.view().instrument(), *config_.account);
+    }
+}
+const Portfolio& BacktestEngine::portfolio() const {
+    if (!portfolio_) throw std::logic_error("accounting is not enabled for this run");
+    return *portfolio_;
 }
 void BacktestEngine::prime_market() {
     auto next = market_.next_event();
@@ -163,10 +241,12 @@ std::uint64_t BacktestEngine::schedule(Timestamp time, EventPriority priority, R
 }
 std::uint64_t BacktestEngine::submit_after(Order order, Timestamp delay) {
     if (finished_ || !ready_) throw std::logic_error("order submission requires an active trusted runtime");
-    if (!market_.capabilities().synthetic_orders) {
-        throw std::logic_error("historical execution is not implemented until WP3");
+    if (!market_.capabilities().synthetic_orders && !portfolio_) {
+        throw std::logic_error("historical orders require an explicit account configuration");
     }
-    return queue_.push(delayed_time_ns(now(), delay), EventPriority::OrderArrival, order);
+    const auto id = queue_.push(delayed_time_ns(now(), delay), EventPriority::OrderArrival, order);
+    if (portfolio_) pending_orders_.emplace(id, order);
+    return id;
 }
 std::uint64_t BacktestEngine::cancel_after(OrderId id, Timestamp delay) {
     if (finished_ || !ready_) throw std::logic_error("cancellation requires an active trusted runtime");
@@ -186,6 +266,9 @@ RuntimeResult BacktestEngine::run(RuntimeCallback strategy) {
             clock_.advance_to(event.key.time_ns);
             std::string status;
             std::optional<ExecutionReport> execution;
+            std::optional<ExecutionOutcome> outcome;
+            std::vector<ExecutionOutcome> terminated;
+            const auto previous_validity = market_.view().validity();
             bool market_tick = false;
             ready_ = now() >= config_.start_ns && now() < config_.end_ns &&
                      market_.view().top_trusted() && trusted_updates_ >= config_.warmup_trusted_updates;
@@ -194,6 +277,10 @@ RuntimeResult BacktestEngine::run(RuntimeCallback strategy) {
             }
             if (now() >= config_.end_ns && !std::holds_alternative<EndEvent>(event.payload)) {
                 status = "expired_at_end";
+                if (portfolio_ && std::holds_alternative<Order>(event.payload)) {
+                    outcome = historical_execution_.terminate(std::get<Order>(event.payload), now(), status);
+                    pending_orders_.erase(event.id);
+                }
             } else if (std::holds_alternative<StartEvent>(event.payload)) {
                 status = "start";
             } else if (std::holds_alternative<EndEvent>(event.payload)) {
@@ -203,14 +290,21 @@ RuntimeResult BacktestEngine::run(RuntimeCallback strategy) {
                 result_.reason = result_.ever_ready ? "end" : "no_trusted_ready_state";
             } else if (const auto* market = std::get_if<MarketEvent>(&event.payload)) {
                 status = market_.advance(*market, now());
+                if (portfolio_) historical_execution_.observe(*market, status);
                 market_tick = true;
                 if (status == "applied" || status == "submitted" || status == "cancelled") {
                     ++result_.applied_updates;
                     if (market_.view().top_trusted()) ++trusted_updates_;
                 }
             } else if (const auto* order = std::get_if<Order>(&event.payload)) {
-                execution = market_.submit(*order, now());
-                status = "submitted";
+                if (portfolio_) {
+                    pending_orders_.erase(event.id);
+                    outcome = historical_execution_.execute(*order, now(), market_.view(), *portfolio_);
+                    status = execution_status_name(outcome->status);
+                } else {
+                    execution = market_.submit(*order, now());
+                    status = "submitted";
+                }
             } else if (const auto* cancel = std::get_if<CancelRequest>(&event.payload)) {
                 status = market_.cancel(cancel->id, now()) ? "cancelled" : "cancel_miss";
             } else {
@@ -233,8 +327,21 @@ RuntimeResult BacktestEngine::run(RuntimeCallback strategy) {
                     result_.ever_ready = result_.ever_ready || ready_;
                 }
             }
+            if (finished_ && portfolio_) {
+                for (const auto& pending : pending_orders_) {
+                    terminated.push_back(historical_execution_.terminate(pending.second, now(),
+                                          result_.halted ? "expired_on_halt" : "expired_at_end"));
+                }
+                pending_orders_.clear();
+            }
             ++result_.dispatched;
-            if (journal_) journal_({event, status, current_view, ready_, execution});
+            if (portfolio_) result_.account = portfolio_->snapshot(current_view);
+            if (journal_) {
+                journal_({event, status, current_view, ready_, execution, outcome,
+                          result_.account,
+                          std::move(terminated), previous_validity == current_view.validity() ? std::nullopt :
+                                                std::make_optional(previous_validity)});
+            }
             if (finished_) break;
             if (market_tick) {
                 // All same-time source updates are queued in round zero ahead of callbacks.
